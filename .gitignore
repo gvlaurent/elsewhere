@@ -1,0 +1,14 @@
+# Dépendances et builds
+node_modules/
+dist/
+build/
+
+# Secrets : jamais sur GitHub
+.env
+.env.*
+!.env.example
+
+# Réglages personnels et fichiers système
+.claude/settings.local.json
+.DS_Store
+*.log

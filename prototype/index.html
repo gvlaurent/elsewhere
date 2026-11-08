@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="fr">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Radio Monde — Pixel Art V4</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <main class="phone">
+        <section class="page home" aria-label="Accueil Radio Monde en pixel art"><a class="tap" href="#world"
+                aria-label="Toucher l’antenne pour entrer dans la carte"></a>
+            <div class="beacon"></div>
+            <div class="ring"></div>
+            <div class="ring r2"></div>
+            <div class="ring r3"></div>
+        </section>
+        <section class="page world" id="world" aria-label="Carte du monde"><a class="back" href="#">← Accueil</a>
+            <button class="play-btn" type="button" aria-label="Écouter la radio"></button>
+            <audio id="radio" src="https://replaynewsja.ice.infomaniak.ch/replaynewsja-128.mp3" preload="none"></audio>
+            <div class="station-info" aria-live="polite">
+                <div class="station-name">REPLAY NEWS 日本語</div>
+                <div class="station-place">Tokyo, Japon</div>
+                <div class="station-tags">Actualités · Talk</div>
+            </div>
+            <button class="surprise-btn" type="button" aria-label="Surprends-moi : radio au hasard"></button>
+            <div class="caption">Prototype graphique — carte illustrative</div>
+        </section>
+    </main>
+    <script src="script.js"></script>
+</body>
+
+</html>
