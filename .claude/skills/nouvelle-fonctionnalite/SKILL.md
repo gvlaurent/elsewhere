@@ -6,10 +6,10 @@ description: Coder une user story d'Elsewhere de bout en bout (test d'abord, pui
 # Coder une nouvelle fonctionnalité
 
 ## Avant de coder
-1. Identifier la story dans `docs/prd.md` et le ticket correspondant dans le Kanban Notion. Si aucun ticket n'existe, le signaler et proposer de le créer.
+1. Identifier la story dans `docs/prd.md` et le ticket correspondant dans Linear (projet Elsewhere). Si aucun ticket n'existe, le signaler et proposer de le créer. Tant que `docs/prd.md` n'existe pas, le ticket Linear fait référence.
 2. Reformuler en trois phrases ce que la fonctionnalité doit faire et ses critères d'acceptation. Attendre l'accord de Gabriel.
 3. Lister les fichiers qui seront créés ou modifiés, couche par couche.
-4. Créer une branche `feat/<id-story>-<nom-court>`.
+4. Créer la branche au nom proposé par Linear (`gvlaurent/els-<numéro>-<titre>`), comme le prévoit `CONTRIBUTING.md`.
 
 ## Pendant
 5. Écrire d'abord les tests qui traduisent les critères d'acceptation, et vérifier qu'ils échouent.
