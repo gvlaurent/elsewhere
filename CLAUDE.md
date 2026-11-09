@@ -6,8 +6,8 @@ Application d'écoute des radios du monde, construite seul par Gabriel.
 ## Au début de chaque session
 
 - Charger le skill Notion « Skill — Reprendre et faire avancer le projet Elsewhere (solo, Jedha + RNCP CDA) » : https://app.notion.com/p/4097c7730ade813c9c10eafa61206e26
-- Consulter le Kanban (vue « Par sprint ») pour connaître le sprint en cours : https://app.notion.com/p/4282299a4b69402797dc5f4eecc6c6f9
-- Référence du périmètre : `docs/prd.md`. Architecture : `docs/architecture.md`.
+- Consulter le projet Linear pour connaître le sprint en cours (un sprint = un jalon, par exemple « S0 Cadrage ») : https://linear.app/gvlaurent/project/elsewhere-mvp-soutenance-14-dec-f6c8265910be
+- Référence du périmètre : `docs/prd.md`. Architecture : `docs/architecture.md`. Ces deux fichiers n'existent pas encore : en attendant, le ticket Linear fait référence.
 
 ## Stack
 
@@ -19,7 +19,7 @@ Application d'écoute des radios du monde, construite seul par Gabriel.
 
 - Jamais de faux titre : si un flux ne donne pas le titre en cours, on ne l'invente pas.
 - Aucun secret dans le dépôt : variables d'environnement, `.env` ignoré par Git, `.env.example` à jour.
-- Une branche et une pull request par tâche, même en solo.
+- Nommage, branches, commits, pull requests et Definition of Done : voir `CONTRIBUTING.md`.
 - Gabriel n'est pas ingénieur : expliquer chaque choix technique simplement, sans appauvrir le fond.
 - Ne jamais copier de code de l'équipe Jedha.
 - Demander confirmation avant de supprimer des fichiers ou des pages Notion, ou de réécrire l'historique Git.
@@ -34,7 +34,14 @@ Application d'écoute des radios du monde, construite seul par Gabriel.
 
 ## Skills du projet
 
+Rangés dans `.claude/skills/` :
+
 - `nouvelle-fonctionnalite` : pour coder une user story.
+
+## Skills à créer
+
+Prévus mais pas encore dans le dépôt :
+
 - `relecture-avant-pr` : avant chaque pull request.
 - `expliquer-code-notion` : dès qu'un code est validé.
 - `fin-de-session` : à la fin de chaque session de travail.
