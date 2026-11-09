@@ -97,8 +97,11 @@ function clean(text) {
 function readFirstMetadata(response, metaint) {
   return new Promise((resolve) => {
     let buffer = Buffer.alloc(0);
+    // Un minuteur en attente garde Node.js en vie : on l'annule dès qu'on a fini.
+    const timer = setTimeout(() => finish(""), LISTEN_MS);
 
     const finish = (text) => {
+      clearTimeout(timer);
       response.destroy();
       resolve(text);
     };
@@ -118,7 +121,6 @@ function readFirstMetadata(response, metaint) {
     });
     response.on("end", () => finish(""));
     response.on("error", () => finish(""));
-    setTimeout(() => finish(""), LISTEN_MS);
   });
 }
 
