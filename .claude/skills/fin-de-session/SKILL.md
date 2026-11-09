@@ -10,7 +10,7 @@ Objectif : ne rien perdre, laisser une trace utile au Dossier RNCP, et savoir ex
 ## Étapes
 
 1. **État des lieux** :
-   - worktrees existants : `git worktree list`, puis `git status` dans chacun ;
+   - worktrees existants : `git worktree list`, puis `git status` dans chacun. Signaler ceux dont la branche est déjà fusionnée (`gh pr list --state merged`) et proposer de les supprimer, après accord ;
    - commits du jour, toutes branches confondues : `git log --all --since=midnight --oneline` ;
    - pull requests ouvertes : `gh pr list` ;
    - tickets Linear modifiés ou en cours.
