@@ -10,8 +10,8 @@ Objectif : ne rien perdre, laisser une trace utile au Dossier RNCP, et savoir ex
 ## Étapes
 
 1. **État des lieux** :
-   - branches et worktrees touchés : `git status` dans chacun ;
-   - commits du jour : `git log --since=midnight --oneline` ;
+   - worktrees existants : `git worktree list`, puis `git status` dans chacun ;
+   - commits du jour, toutes branches confondues : `git log --all --since=midnight --oneline` ;
    - pull requests ouvertes : `gh pr list` ;
    - tickets Linear modifiés ou en cours.
 2. **Ne rien perdre** : s'il reste des modifications non commitées, proposer un commit de travail en cours sur la branche du ticket (jamais sur `main`), ou noter précisément ce qui reste en suspens.
@@ -20,7 +20,7 @@ Objectif : ne rien perdre, laisser une trace utile au Dossier RNCP, et savoir ex
    - un commentaire d'avancement sur chaque ticket en cours : fait, reste à faire, blocage ;
    - pour un ticket dont l'échéance est dépassée : le signaler et proposer une décision (reporter, réduire, abandonner), à consigner au Journal.
    Rappel : la fusion d'une PR clôt automatiquement son ticket. Si le ticket demandait plusieurs PR, proposer de le rouvrir.
-4. **Journal Elsewhere** (base Notion « Journal Elsewhere ») — proposer une ligne par fait, jamais un résumé fourre-tout :
+4. **Journal Elsewhere** (base Notion « Journal Elsewhere » : https://app.notion.com/p/316039cb570e4230bec18ffc91805be2) — proposer une ligne par fait, jamais un résumé fourre-tout :
    - **Livrable** : PR ouverte ou fusionnée, avec son lien ;
    - **Décision** : un choix qui change quelque chose, avec sa raison. Si elle remplace une décision précédente, passer l'ancienne ligne en « Remplacé » (ne jamais l'effacer) ;
    - **Apprentissage** : notion nouvelle, statut « Ouvert » tant qu'elle n'est pas vérifiée (voir le skill `expliquer-code-notion`) ;

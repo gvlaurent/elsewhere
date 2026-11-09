@@ -11,8 +11,10 @@ Objectif : aucune pull request n'est ouverte sans que tout le diff ait été rel
 
 1. **Identifier le ticket** d'après le nom de la branche (`gvlaurent/els-<numéro>-…`), puis relire ses critères d'acceptation dans Linear. Si la branche ne contient pas d'identifiant ELS, le signaler.
 2. **Mesurer le périmètre** :
+   - `git fetch origin` (récupérer `main` à jour depuis GitHub : la copie locale de `main` est souvent en retard) ;
    - `git status` (fichiers non commités ou non suivis) ;
-   - `git diff main...HEAD --stat` (tout ce que la branche change par rapport à `main`).
+   - `git diff origin/main...HEAD --stat` (tout ce que la branche change par rapport à `main` à jour).
+   Si la branche contient des commits d'un autre ticket déjà fusionné en squash, le signaler : il faut la reconstruire depuis `origin/main` avant d'ouvrir la PR.
    Signaler tout fichier qui sort du périmètre du ticket.
 3. **Relire le diff complet, fichier par fichier**, avec la grille ci-dessous.
 4. **Lancer les tests** s'ils existent (`npm test`, ou la commande indiquée dans `package.json`). S'il n'y en a pas encore, le dire, sans prétendre qu'ils passent.
@@ -53,7 +55,7 @@ Expliquer chaque point en une ou deux phrases simples : Gabriel n'est pas ingén
 
 ## Definition of Done
 
-Pour chaque case du modèle de PR, indiquer : **fait**, **sans objet** (avec la raison) ou **à faire**.
+Pour chaque case du modèle de PR, indiquer : **fait**, **sans objet** (avec la raison) ou **à faire**. « Sans objet » suit la règle de `CONTRIBUTING.md` : seules les cases liées au code, et seulement si le diff ne contient que de la documentation.
 
 - La case « relu le lendemain, à froid » appartient à Gabriel : ne jamais la cocher ni la déclarer faite à sa place.
 - Si le ticket contient du code validé, proposer d'enchaîner avec le skill `expliquer-code-notion` pour la case sur l'explication du code.
@@ -63,7 +65,7 @@ Pour chaque case du modèle de PR, indiquer : **fait**, **sans objet** (avec la 
 
 - Message : `<type>: <ce que fait le commit> (ELS-<numéro>)`, selon `CONTRIBUTING.md`.
 - Description : le modèle de PR rempli ; « Comment vérifier » donne des étapes concrètes.
-- Si le ticket demande plusieurs PR, utiliser le mot-clé prévu dans `CONTRIBUTING.md` pour ne pas clôturer le ticket trop tôt.
+- Si le ticket demande plusieurs PR, écrire `Part of ELS-<numéro>` dans la description de chaque PR sauf la dernière, pour ne pas clôturer le ticket trop tôt (voir `CONTRIBUTING.md`).
 - Un commit écrit par l'agent porte la mention `Co-Authored-By: Claude`.
 
 ## Règles
