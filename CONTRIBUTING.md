@@ -52,3 +52,4 @@ Exemple : `feat: affiche le titre en cours d'une station (ELS-21)`
 - Jamais de push direct sur `main` : tout passe par une pull request, même en solo.
 - Le titre de la PR reprend le format des commits.
 - La description suit le modèle `.github/pull_request_template.md`, qui contient la Definition of Done. Une PR n'est fusionnée que lorsque toutes ses cases sont cochées.
+- Une case qui ne s'applique pas est cochée et suivie de la mention `(sans objet : documentation uniquement)`. Seules les cases liées au code (tests, commentaires, explication Notion) peuvent l'être, et seulement si le diff ne contient que de la documentation.
