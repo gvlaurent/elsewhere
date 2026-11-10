@@ -57,7 +57,7 @@ Expliquer chaque point en une ou deux phrases simples : Gabriel n'est pas ingén
 
 Pour chaque case du modèle de PR, indiquer : **fait**, **sans objet** (avec la raison) ou **à faire**. « Sans objet » suit la règle de `CONTRIBUTING.md` : seules les cases liées au code, et seulement si le diff ne contient que de la documentation.
 
-- La case « relu le lendemain, à froid » appartient à Gabriel : ne jamais la cocher ni la déclarer faite à sa place.
+- La case « relu à froid après une pause d'au moins une heure » appartient à Gabriel : ne jamais la cocher ni la déclarer faite à sa place.
 - Si le ticket contient du code validé, proposer d'enchaîner avec le skill `expliquer-code-notion` pour la case sur l'explication du code.
 - Rappeler la ligne à ajouter au Journal Elsewhere avec le lien de la PR.
 
