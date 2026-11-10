@@ -38,11 +38,11 @@ Application d'écoute des radios du monde, construite seul par Gabriel.
 Rangés dans `.claude/skills/` :
 
 - `nouvelle-fonctionnalite` : pour coder une user story.
+- `relecture-avant-pr` : avant chaque pull request.
+- `fin-de-session` : à la fin de chaque session de travail.
 
 ## Skills à créer
 
 Prévus mais pas encore dans le dépôt :
 
-- `relecture-avant-pr` : avant chaque pull request.
 - `expliquer-code-notion` : dès qu'un code est validé.
-- `fin-de-session` : à la fin de chaque session de travail.

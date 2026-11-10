@@ -60,4 +60,5 @@ Exemple : `feat: affiche le titre en cours d'une station (ELS-21)`
 - Le titre de la PR reprend le format des commits.
 - Les PR sont fusionnées en squash : tous leurs commits deviennent un seul commit sur `main`, dont le message est le titre de la PR, suivi de son numéro ajouté par GitHub (par exemple `(#3)`). On obtient ainsi une ligne par ticket dans l'historique. GitHub est configuré pour n'autoriser que ce mode.
 - La description suit le modèle `.github/pull_request_template.md`, qui contient la Definition of Done. Une PR n'est fusionnée que lorsque toutes ses cases sont cochées.
+- Par défaut, la fusion d'une PR clôt son ticket dans Linear. Si le ticket demande plusieurs PR, on écrit `Part of ELS-<numéro>` dans la description de chaque PR sauf la dernière : Linear relie la PR au ticket sans le fermer. La dernière PR reprend le format habituel.
 - Une case qui ne s'applique pas est cochée et suivie de la mention `(sans objet : documentation uniquement)`. Seules les cases liées au code (tests, commentaires, explication Notion) peuvent l'être, et seulement si le diff ne contient que de la documentation.
