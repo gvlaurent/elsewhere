@@ -4,7 +4,7 @@ Maquettes mobiles (390 × 844) du produit minimum présenté à la soutenance Je
 
 - **Maquettes (Figma)** : https://www.figma.com/design/Xb3pF4tQ0bo3WLuQrk5iLU
 - **Schéma de navigation (FigJam)** : https://www.figma.com/board/7qL2rGfQvIQdi2996D029e
-- **Point de départ visuel** : `figma/maquette_V3_reference.png` (palette crème et bleu, carte du monde). Le nom « Radio Monde » y est remplacé par « Elsewhere ».
+- **Point de départ visuel** : la maquette V3 (palette crème et bleu, carte du monde), visible dans la page « Historique » du fichier Figma. Le nom « Radio Monde » y est remplacé par « Elsewhere ».
 
 ## Écrans
 
@@ -27,6 +27,19 @@ Maquettes mobiles (390 × 844) du produit minimum présenté à la soutenance Je
 Le fichier contient aussi les **composants** réutilisés par tous les écrans (boutons, puce de thème, lignes de station, mini-lecteur, barre d'onglets) et les **couleurs nommées** (variables Figma `Elsewhere`), qui deviendront les variables CSS de l'interface React.
 
 Hors maquettes, car hors périmètre du produit minimum : listes personnalisées (F8), espace administrateur (F10), raccourcis (F11).
+
+## Historique des maquettes
+
+Le fichier Figma a une seconde page, **Historique**, qui garde la trace des maquettes faites sous l'ancien nom Radio Monde. Elles ne sont plus la référence.
+
+| # | Élément | Fichier d'origine |
+| --- | --- | --- |
+| 1 | Premier jet, versions 1 et 2 | `figma/test_maquette_V1.png` |
+| 2 | Version 3, référence visuelle | `figma/maquette_V3_reference.png` |
+| 3 | Prototype graphique, reconstruit en calques Figma (textes modifiables) | `figma/ecrans_editables.svg`, `prototype/assets/ecran_1.webp`, `ecran_2.webp` |
+| 4 | Ce qui a changé pour le MVP | — |
+
+Figma est désormais la seule source de ces maquettes : le dossier `figma/` a été retiré du dépôt. Les fichiers restent récupérables dans l'historique Git (commit `6869406`). Les images du prototype, utilisées par `prototype/style.css`, restent dans `prototype/assets/`.
 
 ## Accessibilité (RGAA)
 
