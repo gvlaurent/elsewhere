@@ -40,10 +40,5 @@ Rangés dans `.claude/skills/` :
 - `nouvelle-fonctionnalite` : pour coder une user story.
 - `relecture-avant-pr` : avant chaque pull request.
 - `point-projet` : au début d'une session ou d'une semaine, pour faire le point en lecture seule.
-- `fin-de-session` : à la fin de chaque session de travail.
-
-## Skills à créer
-
-Prévus mais pas encore dans le dépôt :
-
 - `expliquer-code-notion` : dès qu'un code est validé.
+- `fin-de-session` : à la fin de chaque session de travail.
