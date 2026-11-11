@@ -7,7 +7,6 @@ Application d'écoute des radios du monde, construite seul par Gabriel.
 
 - Lancer le skill `point-projet` (depuis `main`) : état du sprint, des PR, des worktrees et du Journal, puis le prochain ticket conseillé.
 - Charger le skill Notion « Skill — Reprendre et faire avancer le projet Elsewhere (solo, Jedha + RNCP CDA) » : https://app.notion.com/p/4097c7730ade813c9c10eafa61206e26
-- Consulter le projet Linear pour connaître le sprint en cours (un sprint = un jalon, par exemple « S0 Cadrage ») : https://linear.app/gvlaurent/project/elsewhere-mvp-soutenance-14-dec-f6c8265910be
 - Avant d'attaquer un nouveau ticket, lui créer son worktree Orca (voir `CONTRIBUTING.md`, section « Branches ») au lieu de changer de branche dans le dossier courant.
 - Référence du périmètre : `docs/prd.md`. Architecture : `docs/architecture.md`. Ces deux fichiers n'existent pas encore : en attendant, le ticket Linear fait référence.
 

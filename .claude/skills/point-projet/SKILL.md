@@ -15,7 +15,7 @@ Il se lance depuis le dossier principal, sur `main`. Il n'y crée aucun fichier 
 2. **Pull requests** :
    - ouvertes : `gh pr list` ;
    - fusionnées depuis sept jours : `gh pr list --state merged --search "merged:>=<date>"`.
-3. **Worktrees** : `git worktree list`, puis pour chacun :
+3. **Worktrees** : d'abord `git fetch origin` (télécharger l'état de GitHub sans rien modifier) et signaler si `main` local est en retard sur `origin/main`. Puis `git worktree list`, et pour chacun :
    - le ticket correspondant (`ELS-<numéro>` dans le nom) et son statut Linear ;
    - les modifications non commitées (`git -C <chemin> status --short`) ;
    - « à nettoyer » si sa PR est fusionnée. Ne rien supprimer : c'est le rôle du skill `fin-de-session`, et seulement après accord.
