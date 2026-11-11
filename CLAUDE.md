@@ -8,7 +8,7 @@ Application d'écoute des radios du monde, construite seul par Gabriel.
 - Lancer le skill `point-projet` (depuis `main`) : état du sprint, des PR, des worktrees et du Journal, puis le prochain ticket conseillé.
 - Charger le skill Notion « Skill — Reprendre et faire avancer le projet Elsewhere (solo, Jedha + RNCP CDA) » : https://app.notion.com/p/4097c7730ade813c9c10eafa61206e26
 - Avant d'attaquer un nouveau ticket, lui créer son worktree Orca (voir `CONTRIBUTING.md`, section « Branches ») au lieu de changer de branche dans le dossier courant.
-- Référence du périmètre : `docs/prd.md`. Architecture : `docs/architecture.md`. Ces deux fichiers n'existent pas encore : en attendant, le ticket Linear fait référence.
+- Référence du périmètre : `docs/prd.md` (lire ses « écarts connus » en tête). Architecture : `docs/architecture.md`, qui n'existe pas encore : en attendant, le ticket Linear fait référence.
 
 ## Stack
 
