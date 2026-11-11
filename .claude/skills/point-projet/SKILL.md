@@ -28,7 +28,7 @@ Il se lance depuis le dossier principal, sur `main`. Il n'y crée aucun fichier 
 7. **Prochain ticket conseillé** : en choisir un seul, avec sa raison en une phrase et sa première action concrète.
 
    Règle de choix, dans cet ordre (le premier critère rempli l'emporte) :
-   1. Finir avant de commencer : une PR ouverte à relire ou à fusionner (ticket In Review), en respectant la pause d'1 h avant la relecture à froid.
+   1. Finir avant de commencer : une PR ouverte à relire ou à fusionner (ticket In Review).
    2. Un ticket en retard, ou dont l'échéance tombe dans les trois jours.
    3. Un ticket In Progress du jalon en cours. S'il y en a déjà deux, ne pas en proposer un nouveau.
    4. Un ticket du jalon en cours qui en bloque d'autres, puis le reste du jalon en cours. Jamais un ticket du jalon suivant tant que le jalon en cours n'est pas terminé.
