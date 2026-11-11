@@ -11,6 +11,7 @@
 > 5. **Métadonnées (section 6)** : le test est fait (ELS-5). Un tiers des radios musicales donnent un vrai titre, et la règle actuelle afficherait 29 % de faux titres.
 > 6. **Questions ouvertes (section 11)** : l'annuaire est choisi (Radio Browser, ELS-6). La recevabilité d'un projet solo reste à confirmer avec Jedha.
 > 7. ~~**Modèle de données (section 7)**~~ : **tranché le 11 novembre 2026** (ELS-63). 9 tables, `track_plays` remplacé par deux colonnes de `stations`. La section 7 est à jour.
+> 8. ~~**Écrans visés**~~ : **tranché le 11 novembre 2026** (ELS-64). Le PRD ne disait pas sur quels écrans tourne Elsewhere : c'est une application web responsive, pour mobile et desktop, avec une seule base de code. Voir les sections 4 et 7. Les contraintes de l'audio sur mobile sont traitées dans ELS-65.
 
 Auteur : Gabriel. Version 1, 30 octobre 2026. Statut : brouillon à valider.
 
@@ -59,6 +60,7 @@ Passage visé : première quinzaine de mars 2027, sous réserve des sessions de 
 - **Jamais de faux titre.** Si une station ne diffuse pas ses métadonnées, elle est affichée comme « titre indisponible ».
 - On ne demande jamais à l'utilisateur pourquoi il écoute ni d'où il vient.
 - Les données personnelles restent à l'utilisateur : export et suppression possibles.
+- **Mobile et desktop.** Elsewhere est une application web qui s'utilise aussi bien sur téléphone que sur ordinateur. La mise en page est pensée d'abord pour le petit écran, puis élargie.
 
 ## 5. Périmètre fonctionnel
 
@@ -121,7 +123,7 @@ L'historique des titres repose sur une hypothèse non vérifiée : les flux radi
 
 | Couche | Choix | Raison |
 | --- | --- | --- |
-| Front-end | React avec Vite | Vu en cours Jedha, un seul langage avec le back. |
+| Front-end | React avec Vite, application web responsive (mobile et desktop) | Vu en cours Jedha, un seul langage avec le back. Une seule base de code pour tous les écrans, sans application mobile native. |
 | Back-end | Node.js avec Express | Vu en cours Jedha, supports de révision disponibles. |
 | Base de données | PostgreSQL, hébergée chez Supabase | Outil déjà connu. **Supabase sert uniquement de base** : l'API, l'authentification et les règles d'accès sont codées dans mon back-end, pour que le jury voie mon travail. |
 | Tests | Tests automatisés de l'API | Priorité aux tests de sécurité : accès refusé sans connexion, accès refusé à la liste d'un autre, accès admin refusé à un utilisateur. |
