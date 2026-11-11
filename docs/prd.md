@@ -9,7 +9,7 @@
 > 3. **Calendrier (section 10)** : le PRD place le développement entre le 5 janvier et le 8 février. Le projet Linear prévoit un produit minimum codé et déployé pour la soutenance du 14 décembre (jalons S1 à S4), avec le déploiement continu dès le S1 (ELS-15).
 > 4. **Guide du lieu (J4, chatbot RAG)** : hors périmètre ici, mais planifié en S4 (ELS-27, exigence Jedha) et présent dans les maquettes (ELS-7).
 > 5. **Métadonnées (section 6)** : le test est fait (ELS-5). Un tiers des radios musicales donnent un vrai titre, et la règle actuelle afficherait 29 % de faux titres.
-> 6. **Questions ouvertes (section 11)** : l'annuaire est choisi (Radio Browser, ELS-6). La recevabilité d'un projet solo reste à confirmer avec Jedha.
+> 6. ~~**Questions ouvertes (section 11)**~~ : **tranché le 11 novembre 2026** (ELS-66). L'annuaire est choisi (Radio Browser, ELS-6). Le projet est présenté en solo au jury RNCP ; seule la présentation Jedha de 5 minutes du 14 décembre se fait en équipe (voir la section 1). Les dates du jury et la question de l'agent restent ouvertes en section 11.
 > 7. ~~**Modèle de données (section 7)**~~ : **tranché le 11 novembre 2026** (ELS-63). 9 tables, `track_plays` remplacé par deux colonnes de `stations`. La section 7 est à jour.
 > 8. ~~**Écrans visés**~~ : **tranché le 11 novembre 2026** (ELS-64). Le PRD ne disait pas sur quels écrans tourne Elsewhere : c'est une application web responsive, pour mobile et desktop, avec une seule base de code. Voir les sections 4 et 7. Les contraintes de l'audio sur mobile sont traitées dans ELS-65.
 
@@ -17,7 +17,7 @@ Auteur : Gabriel. Version 1, 30 octobre 2026. Statut : brouillon à valider.
 
 ## 1. Contexte et objectif
 
-Elsewhere donne accès aux radios du monde entier, en montrant ce qui passe en ce moment dans un lieu ou dans un genre musical. Le projet d'équipe est présenté à la soutenance Jedha du 14 décembre 2026.
+Elsewhere donne accès aux radios du monde entier, en montrant ce qui passe en ce moment dans un lieu ou dans un genre musical. Le projet d'équipe est présenté à la soutenance Jedha du 14 décembre 2026, en une courte présentation de 5 minutes.
 
 Ce document décrit **ma version solo**, codée seule de bout en bout, qui servira de projet pour le titre professionnel **Concepteur développeur d'applications (RNCP37873, 3 blocs)**. Elle reprend le concept, les personas et les user stories de l'équipe, mais aucune ligne de code commun.
 
@@ -178,9 +178,7 @@ Si le temps manque, l'application reste cohérente à chaque étape.
 
 ## 11. Questions ouvertes
 
-- Jedha accepte-t-il une version solo d'un projet d'équipe ?
 - Dates des sessions de jury et date limite de dépôt des dossiers.
 - Confirmer auprès de Jedha que l'agent n'est pas exigé pour le passage RNCP.
 - Proportion réelle de stations qui diffusent leurs métadonnées.
-- Choix de l'annuaire externe des stations et de ses conditions d'utilisation.
 - Hébergeur du back-end et du front-end.
