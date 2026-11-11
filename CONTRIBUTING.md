@@ -29,7 +29,14 @@ gvlaurent/els-<numéro>-<titre-du-ticket>
 
 Linear reconnaît ce format et relie tout seul la branche et la pull request au ticket.
 
-Chaque ticket a son propre **worktree** : un dossier séparé, relié au même dépôt Git, qui a sa branche à lui. On le crée avec Orca, et son nom affiché commence par `ELS-<numéro>`.
+Chaque ticket a son propre **worktree** : un dossier séparé, relié au même dépôt Git, qui a sa branche à lui. On le crée avec Orca. Son nom affiché suit le ticket, puis sa pull request :
+
+- à la création : `ELS-<numéro> — <sujet court>` ;
+- dès que la PR est ouverte : `ELS-<numéro> · PR #<numéro de PR> — <sujet court>`. On relie aussi la PR au worktree, pour qu'Orca affiche son état :
+
+```
+orca worktree set --worktree branch:<branche> --pr <numéro de PR> --display-name "ELS-<numéro> · PR #<numéro de PR> — <sujet court>"
+```
 
 - On ne change jamais de branche dans un dossier pour passer à un autre ticket : on ouvre le worktree du ticket.
 - Une fois la PR fusionnée, on supprime le worktree, puis la branche locale. GitHub supprime la branche distante tout seul.
