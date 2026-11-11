@@ -1,0 +1,19 @@
+---
+description: Règles du projet Elsewhere, communes à Claude Code et à Cursor
+alwaysApply: true
+---
+
+# Elsewhere : règles du projet
+
+Les règles du projet ne sont pas recopiées ici : elles vivent dans les fichiers ci-dessous, qui font foi. Les lire avant toute modification du dépôt.
+
+- Règles permanentes, stack, commentaires dans le code : @CLAUDE.md
+- Nommage, branches, commits, pull requests, Definition of Done : @CONTRIBUTING.md
+
+À retenir en priorité :
+
+- Jamais de faux titre : si un flux ne donne pas le titre en cours, on ne l'invente pas.
+- Aucun secret dans le dépôt.
+- API en couches : routes → contrôleurs → services → accès aux données.
+- Un ticket = un worktree Orca : ne pas changer de branche dans un dossier pour passer à un autre ticket.
+- Demander confirmation avant de supprimer des fichiers ou de réécrire l'historique Git.
