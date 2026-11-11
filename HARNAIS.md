@@ -32,7 +32,7 @@ Les règles et les méthodes sont écrites **une seule fois**, dans les fichiers
 ## Limites
 
 - Plusieurs skills lisent ou écrivent dans **Linear**, **Notion** ou **Orca**. Si Cursor n'a pas accès à ces outils, la commande le signale et donne l'action à faire à la main. Pour ces étapes, Claude Code reste l'outil principal.
-- Le harnais ne remplace pas la Definition of Done : la relecture à froid et la fusion restent des gestes de Gabriel.
+- Le harnais ne remplace pas la Definition of Done : la relecture finale du diff et la fusion restent des gestes de Gabriel.
 
 ## Ajouter ou modifier une règle
 
