@@ -4,9 +4,9 @@ Discover radio stations from all over the world, and keep track of what you list
 
 > **Status: in progress.** Built solo, end to end, by Gabriel Laurent. A first usable version is due on December 14, 2026; the complete version is my project for the French state qualification in application development (RNCP37873, level 6) in March 2027.
 
-![Elsewhere design mockup: home screen and world map with the player](figma/maquette_V3_reference.png)
+![Elsewhere mockups: list of places, live board for Dakar with the current title or "title unavailable", and the player](docs/images/maquettes-mvp.png)
 
-*Design mockup (V3, made under the project's former name, Radio Monde). The interactive graphic prototype lives in [`prototype/`](prototype/).*
+*Mobile mockups of the first version: places, the live board of a place, and the player. All 13 screens, the navigation map and the accessibility choices are described in [`docs/els-7-maquettes.md`](docs/els-7-maquettes.md) (in French).*
 
 ## What it will do
 
@@ -40,8 +40,7 @@ Before building the player and the history, I tested whether stations actually s
 | Folder | Content |
 | --- | --- |
 | `prototype/` | Static graphic prototype (HTML, CSS, JavaScript) |
-| `figma/` | Mockups and editable screens |
-| `docs/` | Tests and decisions |
+| `docs/` | Tests, decisions and mockups |
 | `scripts/` | Rerunnable test scripts |
 
 The application itself (API and interface) is being built ticket by ticket.
