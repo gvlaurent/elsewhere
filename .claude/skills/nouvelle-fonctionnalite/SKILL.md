@@ -6,7 +6,7 @@ description: Coder une user story d'Elsewhere de bout en bout (test d'abord, pui
 # Coder une nouvelle fonctionnalité
 
 ## Avant de coder
-1. Identifier la story dans `docs/prd.md` et le ticket correspondant dans Linear (projet Elsewhere). Si aucun ticket n'existe, le signaler et proposer de le créer. Tant que `docs/prd.md` n'existe pas, le ticket Linear fait référence.
+1. Identifier la story dans `docs/prd.md` et le ticket correspondant dans Linear (projet Elsewhere). Si aucun ticket n'existe, le signaler et proposer de le créer. Si le PRD et le ticket se contredisent, ou si la story touche un « écart connu » listé en tête du PRD, le signaler à Gabriel avant de coder.
 2. Reformuler en trois phrases ce que la fonctionnalité doit faire et ses critères d'acceptation. Attendre l'accord de Gabriel.
 3. Lister les fichiers qui seront créés ou modifiés, couche par couche.
 4. Créer la branche au nom proposé par Linear (`gvlaurent/els-<numéro>-<titre>`), comme le prévoit `CONTRIBUTING.md`.
