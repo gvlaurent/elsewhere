@@ -55,7 +55,7 @@ Expliquer chaque point en une ou deux phrases simples : Gabriel n'est pas ingén
 
 ## Definition of Done
 
-Pour chaque case du modèle de PR, indiquer : **fait**, **sans objet** (avec la raison) ou **à faire**. « Sans objet » suit la règle de `CONTRIBUTING.md` : seules les cases liées au code, et seulement si le diff ne contient que de la documentation.
+Pour chaque case du modèle de PR, indiquer : **fait**, **sans objet** (avec la raison) ou **à faire**. Les cas où une case peut être « sans objet » sont fixés dans `CONTRIBUTING.md` (section « Pull requests ») : s'y référer à chaque relecture plutôt que de les déduire. Les deux mentions autorisées sont `(sans objet : documentation uniquement)` et `(sans objet : script d'enquête hors application)`.
 
 - La case « relu à froid après une pause d'au moins une heure » appartient à Gabriel : ne jamais la cocher ni la déclarer faite à sa place.
 - Si le ticket contient du code validé, proposer d'enchaîner avec le skill `expliquer-code-notion` pour la case sur l'explication du code.
