@@ -42,3 +42,5 @@ Rangés dans `.claude/skills/` :
 - `point-projet` : au début d'une session ou d'une semaine, pour faire le point en lecture seule.
 - `expliquer-code-notion` : dès qu'un code est validé.
 - `fin-de-session` : à la fin de chaque session de travail.
+
+Cursor utilise les mêmes règles et les mêmes skills, sans les recopier : voir `HARNAIS.md`.
