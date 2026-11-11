@@ -5,12 +5,12 @@
 > **Écarts connus avec les décisions prises depuis le 30 octobre**, à arbitrer dans des tickets dédiés. En attendant, la décision du Journal Elsewhere ou du ticket Linear l'emporte sur le texte ci-dessous :
 >
 > 1. **Radios musicales uniquement** (décision du 10 novembre). Le PRD parle des « radios du monde entier » sans restriction.
-> 2. **Persona principal** : le choix de Julien contredit la vision du 29 octobre. Question ouverte au Journal, à trancher en atelier.
+> 2. ~~**Persona principal**~~ : **tranché le 11 novembre 2026** (ELS-63). Julien reste le persona principal, Aminata la secondaire, comme dans la section 3.
 > 3. **Calendrier (section 10)** : le PRD place le développement entre le 5 janvier et le 8 février. Le projet Linear prévoit un produit minimum codé et déployé pour la soutenance du 14 décembre (jalons S1 à S4), avec le déploiement continu dès le S1 (ELS-15).
 > 4. **Guide du lieu (J4, chatbot RAG)** : hors périmètre ici, mais planifié en S4 (ELS-27, exigence Jedha) et présent dans les maquettes (ELS-7).
 > 5. **Métadonnées (section 6)** : le test est fait (ELS-5). Un tiers des radios musicales donnent un vrai titre, et la règle actuelle afficherait 29 % de faux titres.
 > 6. **Questions ouvertes (section 11)** : l'annuaire est choisi (Radio Browser, ELS-6). La recevabilité d'un projet solo reste à confirmer avec Jedha.
-> 7. **Modèle de données (section 7)** : ELS-13 liste `users`, `moments`, `stations`, `lists`, `list_stations` et `reports`, sans `places`, `themes`, `station_themes` ni `track_plays`. À trancher dans ELS-13.
+> 7. ~~**Modèle de données (section 7)**~~ : **tranché le 11 novembre 2026** (ELS-63). 9 tables, `track_plays` remplacé par deux colonnes de `stations`. La section 7 est à jour.
 
 Auteur : Gabriel. Version 1, 30 octobre 2026. Statut : brouillon à valider.
 
@@ -133,14 +133,15 @@ L'historique des titres repose sur une hypothèse non vérifiée : les flux radi
 
 - **users** : compte, e-mail, mot de passe haché, rôle (utilisateur ou admin).
 - **places** : lieux, pays, fuseau horaire.
-- **stations** : stations en cache, lieu, URL du flux, statut (active, masquée).
+- **stations** : stations en cache, lieu, URL du flux, statut (active, masquée), dernier titre lu et heure de cette lecture.
 - **themes** et **station\_themes** : thèmes et liaison avec les stations.
-- **track\_plays** : relevés des titres en cours par station, avec horodatage.
 - **moments** : moments gardés par un utilisateur.
 - **lists** et **list\_stations** : listes personnalisées et leur contenu.
 - **reports** : signalements de stations en panne.
 
-Cela fait largement plus que quatre tables liées, avec au moins deux relations plusieurs à plusieurs.
+Cela fait 9 tables liées, avec deux relations plusieurs à plusieurs (`station_themes` et `list_stations`), largement plus que les quatre tables liées attendues.
+
+*Arbitrage du 11 novembre 2026 (ELS-63)* : la table `track_plays` prévue au départ est retirée. Aucune fonctionnalité n'utilise un historique complet des titres : le tableau du direct (F1) n'a besoin que du dernier titre lu de moins de 5 minutes, porté par deux colonnes de `stations`, et le titre qu'un utilisateur veut retrouver est copié dans son moment (F5, F6). Les tables techniques de session et de réinitialisation du mot de passe (C1) seront décidées avec l'authentification (ELS-17).
 
 ## 8. Couverture du référentiel CDA
 
