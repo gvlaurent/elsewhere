@@ -177,7 +177,7 @@ Les lignes 3, 7, 9, 12, 15, 16 et 20 du tirage 3 sont les mêmes stations qu'au 
 
 - **Un cache a réduit l'échantillon :** les tirages 2 et 3, lancés à la même seconde, ont pioché 7 stations identiques. Cause probable : le serveur de Radio Browser renvoie la même réponse à deux requêtes identiques et simultanées. Pour la prochaine fois, espacer les tirages.
 - **20 pays seulement, une station par pays et par tirage :** les résultats par continent restent indicatifs.
-- **HLS et OGG toujours non couverts :** 6 stations sur 53.
+- **HLS et OGG toujours non couverts :** 7 stations sur 53 (6 en HLS, 1 en OGG).
 
 ### Conséquences pour ELS-22 (service stations)
 
