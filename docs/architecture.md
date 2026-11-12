@@ -16,6 +16,7 @@ flowchart LR
     B["Décidé, pas codé"]:::decide
     C["À trancher"]:::trancher
     D["Externe"]:::externe
+    A ~~~ B ~~~ C ~~~ D
 
     classDef code fill:#d3f9d8,stroke:#2b8a3e,color:#000
     classDef decide fill:#d0ebff,stroke:#1c7ed6,color:#000
