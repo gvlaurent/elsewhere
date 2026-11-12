@@ -28,6 +28,33 @@ Before building the player and the history, I tested whether stations actually s
 - **Database**: PostgreSQL hosted on Supabase, used as a database only. Authentication, access rules and validation are written in the Express API.
 - **Station data**: the public [radio-browser.info](https://www.radio-browser.info/) directory
 
+## Architecture
+
+The browser only talks to Elsewhere's own API, and only the API talks to the database. Audio is the one exception: the player reads each station's stream directly, without a relay.
+
+```mermaid
+flowchart LR
+    W["Interface<br/>React + Vite"]:::decide
+    subgraph API["API Express, in layers"]
+        direction TB
+        R["Routes + input validation"]:::decide --> C["Controllers"]:::decide --> S["Services<br/>(business rules)"]:::decide --> D["Data access<br/>(parameterized SQL)"]:::decide
+    end
+    DB[("PostgreSQL<br/>on Supabase")]:::decide
+    RS["Station streams<br/>(audio + ICY metadata)"]:::externe
+    RB["Radio Browser<br/>directory"]:::externe
+
+    W -- "HTTPS · JSON" --> R
+    D -- "SQL" --> DB
+    W -- "live audio" --> RS
+    S -- "reads now-playing titles" --> RS
+    S -- "nightly station sync" --> RB
+
+    classDef decide fill:#d0ebff,stroke:#1c7ed6,color:#000
+    classDef externe fill:#ffffff,stroke:#333333,stroke-dasharray:4 3,color:#000
+```
+
+Four views (business, functional, application, infrastructure), the status of each block (built, decided, still open) and the request walkthroughs are in [`docs/architecture.md`](docs/architecture.md) (in French). It is updated in every pull request that changes the architecture.
+
 ## How the work is run
 
 - One Linear ticket, one short-lived branch, one pull request; `main` is protected
