@@ -33,7 +33,7 @@ Objectif : aucune pull request n'est ouverte sans que tout le diff ait été rel
   - aucun secret dans le diff : chercher les formats de clés courants et les adresses contenant un jeton ;
   - `.env.example` est à jour si une variable d'environnement a été ajoutée.
 - **Tests** : ils existent, ils traduisent les critères d'acceptation, ils passent.
-- **Architecture** : les couches sont respectées (routes → contrôleurs → services → accès aux données).
+- **Architecture** : les couches sont respectées (routes → contrôleurs → services → accès aux données). Si le ticket change un statut, une couche, un middleware, une ressource, une table, un service externe ou l'hébergement, `docs/architecture.md` (schémas, statuts, date « État au ») et le schéma du `README.md` sont mis à jour dans la même PR.
 - **Conventions** (`CONTRIBUTING.md`) : nommage, commentaires en français en tête de fichier et de fonction, pas de commentaire à chaque ligne, pas de code mort ni de `console.log` de débogage oublié.
 - **Interface** (si le ticket en touche une) : libellés des champs, navigation au clavier, contraste, textes alternatifs.
 

@@ -8,7 +8,7 @@ Application d'écoute des radios du monde, construite seul par Gabriel.
 - Lancer le skill `point-projet` (depuis `main`) : état du sprint, des PR, des worktrees et du Journal, puis le prochain ticket conseillé.
 - Charger le skill Notion « Skill — Reprendre et faire avancer le projet Elsewhere (solo, Jedha + RNCP CDA) » : https://app.notion.com/p/4097c7730ade813c9c10eafa61206e26
 - Avant d'attaquer un nouveau ticket, lui créer son worktree Orca (voir `CONTRIBUTING.md`, section « Branches ») au lieu de changer de branche dans le dossier courant.
-- Référence du périmètre : `docs/prd.md` (lire ses « écarts connus » en tête). Architecture : `docs/architecture.md`, qui n'existe pas encore : en attendant, le ticket Linear fait référence.
+- Référence du périmètre : `docs/prd.md` (lire ses « écarts connus » en tête). Architecture : `docs/architecture.md` (couches de l'API, schémas, déroulé de « garder un moment »).
 
 ## Stack
 
@@ -21,6 +21,7 @@ Application d'écoute des radios du monde, construite seul par Gabriel.
 - Jamais de faux titre : si un flux ne donne pas le titre en cours, on ne l'invente pas.
 - Aucun secret dans le dépôt : variables d'environnement, `.env` ignoré par Git, `.env.example` à jour.
 - Nommage, branches, commits, pull requests et Definition of Done : voir `CONTRIBUTING.md`.
+- Architecture à jour : toute pull request qui change un statut (décidé → codé, question tranchée), une couche, un middleware, une ressource de l'API, une table, un service externe ou l'hébergement met à jour `docs/architecture.md` et le schéma du `README.md` dans la même PR (voir la fin de `docs/architecture.md`).
 - Gabriel n'est pas ingénieur : expliquer chaque choix technique simplement, sans appauvrir le fond.
 - Ne jamais copier de code de l'équipe Jedha.
 - Demander confirmation avant de supprimer des fichiers ou des pages Notion, ou de réécrire l'historique Git.
