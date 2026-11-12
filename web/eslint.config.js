@@ -1,3 +1,5 @@
+// Rôle : configure ESLint pour l'interface avec les règles recommandées de JavaScript,
+// les règles propres à React et les variables globales du navigateur (window, document…).
 import js from '@eslint/js'
 import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'
