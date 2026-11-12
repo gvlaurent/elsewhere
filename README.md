@@ -39,11 +39,13 @@ Before building the player and the history, I tested whether stations actually s
 
 | Folder | Content |
 | --- | --- |
+| `api/` | Express API, with its tests and linter |
+| `web/` | React interface, built with Vite |
 | `prototype/` | Static graphic prototype (HTML, CSS, JavaScript) |
-| `docs/` | Tests, decisions and mockups |
+| `docs/` | Tests, decisions, mockups and the [work environment](docs/els-11-environnement.md) |
 | `scripts/` | Rerunnable test scripts |
 
-The application itself (API and interface) is being built ticket by ticket.
+The application is being built ticket by ticket: for now, the API answers a health check and the interface shows a home page.
 
 ## Try it
 
@@ -56,6 +58,16 @@ open prototype/index.html    # on Linux: xdg-open prototype/index.html
 
 # Rerun the stream metadata test (Node.js 18 or later)
 node scripts/test-icy-metadata.js
+```
+
+Run the application (Node.js 24 or later), in two terminals:
+
+```bash
+# API on http://localhost:3000
+cd api && cp .env.example .env && npm install && npm run dev
+
+# Interface on http://localhost:5173
+cd web && npm install && npm run dev
 ```
 
 ## Author
