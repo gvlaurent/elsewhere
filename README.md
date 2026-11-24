@@ -37,7 +37,7 @@ flowchart LR
     W["Interface<br/>React + Vite"]:::decide
     subgraph API["API Express, in layers"]
         direction TB
-        R["Routes + input validation"]:::decide --> C["Controllers"]:::code --> S["Services<br/>(business rules)"]:::decide --> D["Data access<br/>(parameterized SQL)"]:::decide
+        R["Routes + input validation"]:::code --> C["Controllers"]:::code --> S["Services<br/>(business rules)"]:::decide --> D["Data access<br/>(parameterized SQL)"]:::decide
     end
     DB[("PostgreSQL<br/>on Supabase")]:::decide
     RS["Station streams<br/>(audio + ICY metadata)"]:::externe
