@@ -37,7 +37,7 @@ flowchart LR
     W["Interface<br/>React + Vite"]:::decide
     subgraph API["API Express, in layers"]
         direction TB
-        R["Routes + input validation"]:::decide --> C["Controllers"]:::decide --> S["Services<br/>(business rules)"]:::decide --> D["Data access<br/>(parameterized SQL)"]:::decide
+        R["Routes + input validation"]:::decide --> C["Controllers"]:::code --> S["Services<br/>(business rules)"]:::decide --> D["Data access<br/>(parameterized SQL)"]:::decide
     end
     DB[("PostgreSQL<br/>on Supabase")]:::decide
     RS["Station streams<br/>(audio + ICY metadata)"]:::externe
@@ -49,11 +49,12 @@ flowchart LR
     S -- "reads now-playing titles" --> RS
     S -- "nightly station sync" --> RB
 
+    classDef code fill:#d3f9d8,stroke:#2b8a3e,color:#000
     classDef decide fill:#d0ebff,stroke:#1c7ed6,color:#000
     classDef externe fill:#ffffff,stroke:#333333,stroke-dasharray:4 3,color:#000
 ```
 
-Four views (business, functional, application, infrastructure), the status of each block (built, decided, still open) and the request walkthroughs are in [`docs/architecture.md`](docs/architecture.md) (in French). It is updated in every pull request that changes the architecture.
+Green blocks are built (the layers are in place with the first route, `GET /api/health`), blue ones are decided but not built yet. Four views (business, functional, application, infrastructure), the status of each block (built, decided, still open) and the request walkthroughs are in [`docs/architecture.md`](docs/architecture.md) (in French). It is updated in every pull request that changes the architecture.
 
 ## How the work is run
 

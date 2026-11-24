@@ -1,6 +1,6 @@
 # Architecture d'Elsewhere
 
-État au 12 novembre 2026 (ELS-12). Ce document décrit Elsewhere en quatre vues, du métier à l'infrastructure, puis détaille les couches de l'API et le déroulé de deux requêtes. Il complète la section 7 du PRD (`docs/prd.md`) et **il est mis à jour dans chaque pull request qui change l'architecture** (voir la dernière section).
+État au 24 novembre 2026 (ELS-12). Ce document décrit Elsewhere en quatre vues, du métier à l'infrastructure, puis détaille les couches de l'API et le déroulé de deux requêtes. Il complète la section 7 du PRD (`docs/prd.md`) et **il est mis à jour dans chaque pull request qui change l'architecture** (voir la dernière section).
 
 ## Pourquoi ce document
 
@@ -30,7 +30,7 @@ Ce que fait un auditeur, dans l'ordre où il le vit. Le compte n'est demandé qu
 
 ```mermaid
 flowchart LR
-    P1["Découvrir : par lieu, par thème ou au hasard"]:::decide
+    P1["Découvrir : par lieu ou par thème"]:::decide
     P2["Écouter une station, passer à la suivante"]:::decide
     P3["Garder un moment<br/>(compte demandé ici seulement)"]:::decide
     P4["Retrouver : passeport, listes"]:::decide
@@ -51,7 +51,7 @@ Les fonctions de l'application, regroupées par grand domaine (les « quartiers 
 | Lieux et heure locale (F1) | Lecture du flux (F3) | Moments horodatés (F5) | Compte et connexion (F4) | Cache des stations (F9) |
 | Tableau du direct (F1) | Radio suivante (F3) | Passeport par pays (F6) | Session, mot de passe oublié (C1) | Synchro nocturne (C10) |
 | Thèmes (F2) | Titre en cours : jamais de faux titre | Listes personnalisées (F8) | Consentement à l'inscription (C2) | Masquer / réactiver (F10) |
-| Surprends-moi : tirage côté API | Signaler une station en panne (C8) | Raccourcis (F11) | Export et suppression (F7) | Rôles vérifiés par l'API |
+| | Signaler une station en panne (C8) | Raccourcis (F11) | Export et suppression (F7) | Rôles vérifiés par l'API |
 
 Toutes ces fonctions sont décidées et aucune n'est encore codée.
 
@@ -64,18 +64,18 @@ flowchart LR
     subgraph NAV["Navigateur : React + Vite"]
         direction TB
         N1["Page d'accueil"]:::code
-        N2["13 écrans : lieux, direct, thèmes,<br/>lecteur, passeport, compte"]:::decide
+        N2["Écrans : lieux, direct, thèmes, lecteur,<br/>passeport, compte (maquettes ELS-7)"]:::decide
         N3["Lecteur audio : lit le flux<br/>de la station, sans relais"]:::decide
     end
 
     subgraph API["API Express : en couches"]
         direction TB
         A1["Routes · validation des entrées (400)"]:::decide
-        A2["Contrôleurs"]:::decide
-        A3["Services (logique métier) : stations,<br/>titres, comptes, moments, listes, admin"]:::decide
+        A2["Contrôleurs"]:::code
+        A3["Services (logique métier) : stations,<br/>titres, comptes, moments, listes, admin<br/>+ droits d'accès"]:::decide
         A4["Accès aux données : SQL paramétré"]:::decide
         A1 --> A2 --> A3 --> A4
-        A5["Middlewares : session, rôle, erreurs"]:::decide
+        A5["Middlewares : session (qui es-tu ?), erreurs"]:::decide
         A6["Relevé du titre (ICY) + classification"]:::decide
         A7["Tâche nocturne de synchro"]:::decide
         A8["GET /api/health<br/>codée en couches (ELS-12)"]:::code
@@ -86,7 +86,7 @@ flowchart LR
     subgraph EXT["Services externes"]
         direction TB
         X1["Serveurs de flux des stations<br/>(audio + ICY)"]:::externe
-        X2["Radio Browser : annuaire, 224 pays"]:::externe
+        X2["Radio Browser : annuaire,<br/>224 pays (ELS-6)"]:::externe
         X3["Envoi d'e-mails : prestataire à choisir"]:::trancher
         X4["YouTube / Spotify : « chercher ce titre »"]:::externe
     end
@@ -113,8 +113,8 @@ flowchart LR
 flowchart LR
     T1["Poste de dev : Ubuntu, Node 24,<br/>Cursor, Claude Code"]:::code
     T2["GitHub : main protégé,<br/>une PR par ticket"]:::code
-    T3["Intégration continue :<br/>lint + tests à chaque push"]:::trancher
-    T4["Hébergement API + interface :<br/>à choisir"]:::trancher
+    T3["Intégration continue :<br/>lint + tests à chaque push (ELS-14)"]:::decide
+    T4["Hébergement API + interface :<br/>déploiement automatique (ELS-15),<br/>hébergeur à choisir"]:::trancher
     T5["Supabase : PostgreSQL seul,<br/>son API auto à couper"]:::decide
     T6["Secrets en variables d'environnement,<br/>jamais dans le dépôt"]:::code
     T7["Navigateur de l'auditeur,<br/>mobile et desktop, en HTTPS"]:::decide
@@ -142,10 +142,10 @@ Chaque requête traverse quatre couches. Chacune n'a qu'un seul rôle et n'appel
 | Services | `api/src/services/` | Porter la logique métier : les règles d'Elsewhere, comme « jamais de faux titre », et **les droits** (un moment n'est visible que par son propriétaire, une action d'admin exige le rôle admin) | Connaître HTTP (`req`, `res`), écrire du SQL |
 | Accès aux données | `api/src/repositories/` | Lire et écrire dans la base, avec des requêtes SQL paramétrées | Décider d'une règle métier |
 
-Deux contrôles d'accès se complètent :
+Deux contrôles d'accès se complètent, chacun dans une seule couche :
 
 - **l'authentification** répond à « qui es-tu ? ». Elle est vérifiée à l'entrée, par un middleware branché sur la route ;
-- **l'autorisation** répond à « as-tu le droit de toucher à ça ? ». Elle est vérifiée dans le service, parce qu'elle dépend des données (à qui appartient ce moment ?).
+- **l'autorisation** répond à « as-tu le droit de toucher à ça ? ». Elle est vérifiée dans le service, parce qu'elle dépend des données (à qui appartient ce moment ?). Le rôle admin en fait partie : le middleware dit seulement qui est connecté, le service décide si ce compte a le droit d'agir.
 
 **Pourquoi ce découpage.** Une règle métier qui change ne touche que le service. Un changement de base ne touche que l'accès aux données. Un service, qui ne connaît pas HTTP, peut se tester sans lancer de serveur.
 
@@ -161,8 +161,9 @@ api/src/
 ├── controllers/
 │   └── health-controller.js
 ├── services/
-│   └── health-service.js
-└── repositories/             arrive avec la connexion à la base (ELS-16)
+│   ├── health-service.js
+│   └── health-service.test.js   test du service seul, sans serveur
+└── repositories/             arrive avec la connexion à la base (ELS-13)
 ```
 
 Chaque ressource (santé, stations, moments…) a un fichier dans chaque couche, nommé `<ressource>-<couche>.js`, en kebab-case comme le veut `CONTRIBUTING.md`.
@@ -202,6 +203,11 @@ sequenceDiagram
     N->>R: POST /api/moments { stationId, themeId? }
     alt pas connecté
         R-->>N: 401 Non authentifié
+        N->>N: garde { stationId, themeId } en mémoire
+        N-->>J: « Crée ton compte pour garder ce moment »
+        J->>N: crée son compte (F4)
+        N->>R: POST /api/moments { stationId, themeId? }, cette fois connecté
+        Note over N,R: même chemin que « connecté et format valide » ci-dessous, sans ressaisie
     else format invalide
         R-->>N: 400 Requête invalide
     else connecté et format valide
@@ -209,13 +215,13 @@ sequenceDiagram
         C->>S: keepMoment(userId, stationId, themeId)
         S->>D: findStationWithPlace(stationId)
         D->>B: SELECT station et son lieu
-        B-->>D: station, dernier titre lu, heure de lecture, fuseau du lieu
+        B-->>D: station, dernier titre classé lisible, heure de lecture, fuseau du lieu
         D-->>S: station et lieu
         alt station inconnue
             S-->>C: erreur « station introuvable »
             C-->>N: 404 Station introuvable
         else station trouvée
-            S->>S: titre gardé seulement s'il a été lu il y a moins de 5 min
+            S->>S: titre gardé seulement s'il est classé lisible et lu il y a moins de 5 min
             S->>S: heure locale calculée avec le fuseau du lieu
             S->>D: createMoment(...)
             D->>B: INSERT INTO moments
@@ -231,14 +237,15 @@ sequenceDiagram
 **Les choix visibles dans ce schéma :**
 
 - **Le titre est lu par l'API, jamais envoyé par le navigateur.** Le navigateur n'envoie que l'identifiant de la station. Sinon, n'importe qui pourrait enregistrer un titre inventé, ce qui contredirait la règle « jamais de faux titre ».
-- **La règle des 5 minutes vit dans le service.** C'est une règle métier : ni la route, ni le contrôleur, ni l'accès aux données ne la connaissent.
+- **Deux filtres protègent du faux titre.** Le relevé du titre (bloc A6) ne stocke un titre qu'après l'avoir classé lisible : sans ce tri, la règle actuelle laisserait passer 29 % de faux titres (PRD, écart n° 5). Puis le service ne garde ce titre que s'il a moins de 5 minutes. Ces deux règles métier vivent dans les services : ni la route, ni le contrôleur, ni l'accès aux données ne les connaissent.
+- **Sans compte, le moment n'est pas perdu.** Le navigateur garde la station et le thème pendant l'inscription, puis renvoie la même requête : l'auditeur ne ressaisit rien (F5).
 - **Chaque refus a son code HTTP et sa couche** : 401 et 400 à l'entrée (route et middlewares), 404 quand le service ne trouve pas la station, 201 quand le moment est créé.
 - **L'accès aux données utilise des requêtes paramétrées** : les valeurs reçues ne sont jamais collées dans le texte SQL, ce qui protège des injections SQL.
 
 **À préciser plus tard :**
 
 - Le fonctionnement exact de la session (cookie, durée) sera décidé avec l'authentification (ELS-17).
-- Le cas « sans compte » de F5 (créer le compte puis garder le moment sans ressaisie) sera détaillé avec la story correspondante.
+- Où le navigateur garde le moment en attente pendant l'inscription (mémoire de la page ou stockage local) sera décidé avec la story F5.
 
 ## Tenir ce document à jour
 
