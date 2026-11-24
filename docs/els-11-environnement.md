@@ -17,7 +17,7 @@ Les versions sont celles réellement installées, relevées avec `node -v`, `npm
 | npm | 11.19.0 | Installe les paquets et lance les scripts | Fourni avec Node, aucun outil de plus à apprendre |
 | Git | 2.53.0 | Historique du code, une branche par ticket | Standard du métier ; worktrees pour travailler sur un ticket à la fois |
 | GitHub CLI (`gh`) | 2.46.0 | Pull requests depuis le terminal | Évite les allers-retours avec le site GitHub |
-| Cursor | 3.29.15 | Éditeur de code avec assistant IA | Mêmes règles et skills que Claude Code (voir `HARNAIS.md`) |
+| Cursor | 3.29.15 | Éditeur de code avec assistant IA | Lit les règles du projet (`.cursor/rules`) ; les skills sont pour Claude Code |
 
 ## API (`api/`)
 
