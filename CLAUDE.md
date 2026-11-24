@@ -5,7 +5,7 @@ Application d'écoute des radios du monde, construite seul par Gabriel.
 
 ## Au début de chaque session
 
-- Lancer le skill `point-projet` (depuis `main`) : état du sprint, des PR, des worktrees et du Journal, puis le prochain ticket conseillé.
+- Faire le point depuis `main` : tickets Linear en cours (`list_issues`, équipe `Elsewhere`), PR ouvertes (`gh pr list`), worktrees (`git worktree list`), puis proposer le prochain ticket selon le jalon et les échéances.
 - Charger le skill Notion « Skill — Reprendre et faire avancer le projet Elsewhere (solo, Jedha + RNCP CDA) » : https://app.notion.com/p/4097c7730ade813c9c10eafa61206e26
 - Avant d'attaquer un nouveau ticket, lui créer son worktree Orca (voir `CONTRIBUTING.md`, section « Branches ») au lieu de changer de branche dans le dossier courant.
 - Référence du périmètre : `docs/prd.md` (lire ses « écarts connus » en tête). Architecture : `docs/architecture.md` (couches de l'API, schémas, déroulé de « garder un moment »).
@@ -29,19 +29,38 @@ Application d'écoute des radios du monde, construite seul par Gabriel.
 ## Commentaires dans le code
 
 - En français, et le code reste propre pour le jury.
-- En tête de fichier : son rôle dans l'architecture. En tête de fonction : pourquoi elle existe et ce qu'elle fait.
+- En tête de fichier : son rôle dans l'architecture. En tête de fonction : pourquoi elle existe, ce qu'elle reçoit et ce qu'elle renvoie. C'est là que vit l'explication détaillée.
 - Notes ponctuelles seulement sur les lignes délicates : asynchrone, sécurité, SQL, contournement non évident.
 - Jamais de commentaire à chaque ligne. Un commentaire devenu faux est corrigé ou supprimé.
 - L'explication ligne par ligne va dans Notion (skill `expliquer-code-notion`).
 
-## Skills du projet
+## Façon de travailler : skills de Matt Pocock
 
-Rangés dans `.claude/skills/` :
+Le harnais d'Elsewhere est le plugin `mattpocock-skills`. Le plugin `harnais` est désactivé pour ce projet (`.claude/settings.json`). Parcours d'un ticket :
 
-- `nouvelle-fonctionnalite` : pour coder une user story.
-- `relecture-avant-pr` : avant chaque pull request.
-- `point-projet` : au début d'une session ou d'une semaine, pour faire le point en lecture seule.
+1. `/grill-with-docs` : se faire questionner sur le besoin, et mettre à jour `GLOSSARY.md` et les ADR au passage.
+2. `/to-spec` puis `/to-tickets` : écrire la spec et la découper en tickets Linear (tranches verticales).
+3. Créer le worktree Orca du ticket, puis `/implement ELS-<n>` : code en TDD (`/tdd`, test d'abord), puis `/code-review`.
+4. `/pr` pour la description, en gardant le modèle `.github/pull_request_template.md` et sa Definition of Done.
+5. `/diagnosing-bugs` pour un bug, `/prototype` pour une question de conception, `/handoff` pour passer la main à une autre session.
+
+Skills propres au projet, rangés dans `.claude/skills/` (Pocock ne couvre pas Notion) :
+
 - `expliquer-code-notion` : dès qu'un code est validé.
-- `fin-de-session` : à la fin de chaque session de travail.
+- `fin-de-session` : à la fin de chaque session de travail (Linear, Journal Elsewhere, reprise).
 
-Cursor utilise les mêmes règles et les mêmes skills, sans les recopier : voir `HARNAIS.md`.
+Cursor lit seulement les règles (`.cursor/rules/`) ; les skills sont pour Claude Code.
+
+## Agent skills
+
+### Issue tracker
+
+Tickets dans Linear (équipe `Elsewhere`, `ELS-<n>`), code et PR sur GitHub. Voir `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Les cinq étiquettes par défaut (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`), en étiquettes Linear. Voir `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Contexte unique : `GLOSSARY.md` et `docs/adr/` à la racine. Voir `docs/agents/domain.md`.
