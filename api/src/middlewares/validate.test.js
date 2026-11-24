@@ -3,10 +3,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import express from 'express';
-import { z } from 'zod';
+import { z } from '../config/zod.js';
 import { validate } from './validate.js';
 import { errorHandler } from './error-handler.js';
-import { startApp } from '../test-helpers.js';
+import { startApp, postJson } from '../start-app-for-tests.js';
 
 // Fabrique une petite application avec une seule route validée, qui renvoie
 // telles quelles les données acceptées par validate.
@@ -26,21 +26,22 @@ function buildApp() {
   return app;
 }
 
-// Envoie un signalement de test ; renvoie la réponse et son corps lu.
-async function postReport(baseUrl, path, body) {
-  const response = await fetch(`${baseUrl}${path}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  return { status: response.status, json: await response.json() };
+// Envoie un signalement de test à la petite application ; renvoie le code
+// HTTP et le corps de la réponse.
+async function postReport(t, path, body) {
+  const baseUrl = await startApp(t, buildApp());
+  return postJson(`${baseUrl}${path}`, JSON.stringify(body));
+}
+
+// Résume les détails d'erreur en paires [endroit, champ], plus faciles à comparer.
+function fieldsOf(json) {
+  return json.error.details.map((d) => [d.location, d.field]);
 }
 
 test('des données valides passent, converties dans le bon type', async (t) => {
-  const baseUrl = await startApp(t, buildApp());
-
-  const { status, json } = await postReport(baseUrl, '/stations/42/reports?lang=fr', {
+  const { status, json } = await postReport(t, '/stations/42/reports?lang=fr', {
     reason: 'plus de son',
+    admin: true,
   });
 
   assert.equal(status, 200);
@@ -52,40 +53,46 @@ test('des données valides passent, converties dans le bon type', async (t) => {
 });
 
 test('un corps invalide répond 400 et nomme le champ fautif', async (t) => {
-  const baseUrl = await startApp(t, buildApp());
-
-  const { status, json } = await postReport(baseUrl, '/stations/42/reports', { reason: 'ok' });
+  const { status, json } = await postReport(t, '/stations/42/reports', { reason: 'ok' });
 
   assert.equal(status, 400);
   assert.equal(json.error.message, 'Requête invalide');
-  assert.equal(json.error.details.length, 1);
-  assert.equal(json.error.details[0].location, 'body');
-  assert.equal(json.error.details[0].field, 'reason');
+  assert.deepEqual(fieldsOf(json), [['body', 'reason']]);
   assert.match(json.error.details[0].message, /Trop petit/);
 });
 
 test('un paramètre d\'adresse invalide répond 400', async (t) => {
-  const baseUrl = await startApp(t, buildApp());
-
-  const { status, json } = await postReport(baseUrl, '/stations/abc/reports', {
+  const { status, json } = await postReport(t, '/stations/abc/reports', {
     reason: 'plus de son',
   });
 
   assert.equal(status, 400);
-  assert.deepEqual(
-    json.error.details.map((d) => [d.location, d.field]),
-    [['params', 'id']],
-  );
+  assert.deepEqual(fieldsOf(json), [['params', 'id']]);
+});
+
+test('une requête (?…) invalide répond 400 et nomme le champ', async (t) => {
+  const { status, json } = await postReport(t, '/stations/42/reports?lang=de', {
+    reason: 'plus de son',
+  });
+
+  assert.equal(status, 400);
+  assert.deepEqual(fieldsOf(json), [['query', 'lang']]);
+});
+
+test('un corps du mauvais type est refusé, sans champ précis', async (t) => {
+  const { status, json } = await postReport(t, '/stations/42/reports', ['plus de son']);
+
+  assert.equal(status, 400);
+  assert.deepEqual(fieldsOf(json), [['body', null]]);
 });
 
 test('toutes les erreurs sont listées ensemble, pas seulement la première', async (t) => {
-  const baseUrl = await startApp(t, buildApp());
-
-  const { status, json } = await postReport(baseUrl, '/stations/abc/reports?lang=de', {});
+  const { status, json } = await postReport(t, '/stations/abc/reports?lang=de', {});
 
   assert.equal(status, 400);
-  assert.deepEqual(
-    json.error.details.map((d) => d.location).sort(),
-    ['body', 'params', 'query'],
-  );
+  assert.deepEqual(fieldsOf(json), [
+    ['params', 'id'],
+    ['query', 'lang'],
+    ['body', 'reason'],
+  ]);
 });

@@ -1,11 +1,8 @@
 // Rôle : middleware de validation des entrées, branché sur une route avant
 // son contrôleur. Vérifie le corps, les paramètres d'adresse et la requête
-// (« ?… ») avec des schémas Zod, et refuse tout ce qui ne correspond pas.
-import { z } from 'zod';
+// (« ?… ») avec des schémas Zod (importés de config/zod.js), et refuse tout
+// ce qui ne correspond pas.
 import { HttpError } from '../errors/http-error.js';
-
-// Messages d'erreur de Zod en français, pour toute l'API.
-z.config(z.locales.fr());
 
 // Les trois endroits d'une requête qui transportent des données du client.
 const LOCATIONS = ['params', 'query', 'body'];
@@ -14,7 +11,9 @@ const LOCATIONS = ['params', 'query', 'body'];
 // facultatif : { params, query, body }. Renvoie un middleware Express qui :
 // - si tout est valide, range les données vérifiées (et converties : « 42 »
 //   devient 42) dans req.validated, puis passe au contrôleur ;
-// - sinon, transmet une HttpError 400 qui liste chaque champ fautif.
+// - sinon, transmet une HttpError 400 qui liste chaque champ fautif (field
+//   vaut null quand c'est l'ensemble qui est faux, par exemple un tableau
+//   envoyé à la place d'un objet).
 // Toutes les erreurs sont collectées avant de répondre, pour que le client
 // corrige tout en une fois.
 export function validate(schemas) {
@@ -33,7 +32,11 @@ export function validate(schemas) {
         validated[location] = result.data;
       } else {
         for (const issue of result.error.issues) {
-          details.push({ location, field: issue.path.join('.'), message: issue.message });
+          details.push({
+            location,
+            field: issue.path.length > 0 ? issue.path.join('.') : null,
+            message: issue.message,
+          });
         }
       }
     }

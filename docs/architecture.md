@@ -161,26 +161,33 @@ api/src/
 │   └── health-routes.js
 ├── middlewares/
 │   ├── validate.js           vérifie params, query et body avec un schéma Zod (400)
+│   ├── validate.test.js
 │   ├── not-found.js          route inconnue sous /api (404)
-│   └── error-handler.js      gestion d'erreurs centrale, branchée en dernier
+│   ├── error-handler.js      gestion d'erreurs centrale, branchée en dernier
+│   └── error-handler.test.js
 ├── errors/
 │   └── http-error.js         erreur prévue, qui porte son code HTTP
-├── test-helpers.js           démarre une application sur un port libre, pour les tests
+├── config/
+│   └── zod.js                Zod réglé en français ; tout schéma importe z d'ici
 ├── controllers/
 │   └── health-controller.js
 ├── services/
 │   ├── health-service.js
 │   └── health-service.test.js   test du service seul, sans serveur
-└── repositories/             arrive avec la connexion à la base (ELS-13)
+├── repositories/             arrive avec la connexion à la base (ELS-13)
+├── app.test.js               l'application assemblée : santé, 404, 400, 413, 415
+└── start-app-for-tests.js    outils des tests (port libre, envoi de JSON)
 ```
 
 Chaque ressource (santé, stations, moments…) a un fichier dans chaque couche, nommé `<ressource>-<couche>.js`, en kebab-case comme le veut `CONTRIBUTING.md`.
 
 ### Validation des entrées et erreurs
 
-Chaque route qui reçoit des données branche le middleware `validate` avant son contrôleur, avec un schéma [Zod](https://zod.dev) par endroit de la requête :
+Chaque route qui reçoit des données branche le middleware `validate` avant son contrôleur, avec un schéma [Zod](https://zod.dev) par endroit de la requête. `z` est toujours importé de `config/zod.js`, qui règle les messages en français :
 
 ```js
+import { z } from '../config/zod.js';
+
 router.post(
   '/:id/reports',
   validate({
@@ -192,9 +199,9 @@ router.post(
 ```
 
 - **Le contrôleur ne lit que `req.validated`**, qui ne contient que des données vérifiées et converties (`"42"` devient `42`). Un champ inattendu envoyé par le client est retiré.
-- **Toutes les erreurs sont listées ensemble**, avec l'endroit (`params`, `query`, `body`), le champ et un message en français : le client corrige tout en une fois.
+- **Toutes les erreurs sont listées ensemble**, avec l'endroit (`params`, `query`, `body`), le champ et un message en français : le client corrige tout en une fois. `field` vaut `null` quand c'est l'ensemble qui est faux (un tableau envoyé à la place d'un objet).
 
-Toutes les erreurs de l'API repartent au même format, quelle que soit la couche qui les a lancées :
+Toutes les erreurs sous `/api` repartent au même format, quelle que soit la couche qui les a lancées :
 
 ```json
 { "error": { "message": "Requête invalide", "details": [
@@ -222,9 +229,11 @@ flowchart LR
 | Corps trop gros ou mal encodé | 413, 415 | Requête refusée |
 | Erreur prévue d'un service (`HttpError`) | son code | son message |
 | Route inconnue sous `/api` | 404 | Ressource introuvable |
-| Erreur imprévue | 500 | Erreur interne du serveur |
+| Erreur imprévue, y compris un code 4xx posé par une autre bibliothèque | 500 | Erreur interne du serveur |
 
-**Une erreur imprévue ne laisse rien fuiter.** Son détail (message technique, pile d'appels, adresse de la base) part seulement dans les journaux du serveur : le client ne reçoit que le message générique, qui ne donne aucune prise à un attaquant.
+**Une erreur imprévue ne laisse rien fuiter.** Son détail (message technique, pile d'appels, adresse de la base) part seulement dans les journaux du serveur : le client ne reçoit que le message générique, qui ne donne aucune prise à un attaquant. Une `HttpError` 5xx lancée par un service est montrée telle quelle, mais aussi journalisée.
+
+**Limites connues.** Hors de `/api`, Express répond encore avec sa page HTML par défaut : l'interface sera servie à part (ELS-15). Si une réponse a déjà commencé à partir quand une erreur survient, on ne peut plus la changer : Express coupe la connexion.
 
 ### Exemple réel : la route de santé
 
