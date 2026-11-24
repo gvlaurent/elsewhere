@@ -1,6 +1,6 @@
 # Architecture d'Elsewhere
 
-État au 24 novembre 2026 (ELS-12). Ce document décrit Elsewhere en quatre vues, du métier à l'infrastructure, puis détaille les couches de l'API et le déroulé de deux requêtes. Il complète la section 7 du PRD (`docs/prd.md`) et **il est mis à jour dans chaque pull request qui change l'architecture** (voir la dernière section).
+État au 24 novembre 2026 (ELS-16). Ce document décrit Elsewhere en quatre vues, du métier à l'infrastructure, puis détaille les couches de l'API et le déroulé de deux requêtes. Il complète la section 7 du PRD (`docs/prd.md`) et **il est mis à jour dans chaque pull request qui change l'architecture** (voir la dernière section).
 
 ## Pourquoi ce document
 
@@ -70,12 +70,13 @@ flowchart LR
 
     subgraph API["API Express : en couches"]
         direction TB
-        A1["Routes · validation des entrées (400)"]:::decide
+        A1["Routes · validation des entrées (400)"]:::code
         A2["Contrôleurs"]:::code
         A3["Services (logique métier) : stations,<br/>titres, comptes, moments, listes, admin<br/>+ droits d'accès"]:::decide
         A4["Accès aux données : SQL paramétré"]:::decide
         A1 --> A2 --> A3 --> A4
-        A5["Middlewares : session (qui es-tu ?), erreurs"]:::decide
+        A5["Middleware de session (qui es-tu ?)"]:::decide
+        A9["Erreurs centrales : 400, 404, 500"]:::code
         A6["Relevé du titre (ICY) + classification"]:::decide
         A7["Tâche nocturne de synchro"]:::decide
         A8["GET /api/health<br/>codée en couches (ELS-12)"]:::code
@@ -158,6 +159,13 @@ api/src/
 ├── routes/
 │   ├── index.js              rassemble les routes de chaque ressource
 │   └── health-routes.js
+├── middlewares/
+│   ├── validate.js           vérifie params, query et body avec un schéma Zod (400)
+│   ├── not-found.js          route inconnue sous /api (404)
+│   └── error-handler.js      gestion d'erreurs centrale, branchée en dernier
+├── errors/
+│   └── http-error.js         erreur prévue, qui porte son code HTTP
+├── test-helpers.js           démarre une application sur un port libre, pour les tests
 ├── controllers/
 │   └── health-controller.js
 ├── services/
@@ -167,6 +175,56 @@ api/src/
 ```
 
 Chaque ressource (santé, stations, moments…) a un fichier dans chaque couche, nommé `<ressource>-<couche>.js`, en kebab-case comme le veut `CONTRIBUTING.md`.
+
+### Validation des entrées et erreurs
+
+Chaque route qui reçoit des données branche le middleware `validate` avant son contrôleur, avec un schéma [Zod](https://zod.dev) par endroit de la requête :
+
+```js
+router.post(
+  '/:id/reports',
+  validate({
+    params: z.object({ id: z.coerce.number().int().positive() }),
+    body: z.object({ reason: z.string().min(3) }),
+  }),
+  createReport,
+);
+```
+
+- **Le contrôleur ne lit que `req.validated`**, qui ne contient que des données vérifiées et converties (`"42"` devient `42`). Un champ inattendu envoyé par le client est retiré.
+- **Toutes les erreurs sont listées ensemble**, avec l'endroit (`params`, `query`, `body`), le champ et un message en français : le client corrige tout en une fois.
+
+Toutes les erreurs de l'API repartent au même format, quelle que soit la couche qui les a lancées :
+
+```json
+{ "error": { "message": "Requête invalide", "details": [
+  { "location": "body", "field": "reason", "message": "Trop petit : …" }
+] } }
+```
+
+```mermaid
+flowchart LR
+    Q["Requête"] --> J["express.json<br/>(corps ≤ 100 ko)"] --> V["validate"] --> C["Contrôleur"] --> S["Service"]
+    J -- "JSON mal formé" --> E
+    V -- "données invalides" --> E
+    S -- "HttpError (404…)" --> E
+    S -- "erreur imprévue" --> E
+    U["Aucune route"] --> E
+    E["Gestion d'erreurs centrale"]:::code --> R["{ error: { message, details } }"]
+
+    classDef code fill:#d3f9d8,stroke:#2b8a3e,color:#000
+```
+
+| Cas | Code | Message envoyé au client |
+| --- | --- | --- |
+| Données invalides (`validate`) | 400 | Requête invalide, avec les champs fautifs |
+| Corps JSON mal formé | 400 | JSON mal formé |
+| Corps trop gros ou mal encodé | 413, 415 | Requête refusée |
+| Erreur prévue d'un service (`HttpError`) | son code | son message |
+| Route inconnue sous `/api` | 404 | Ressource introuvable |
+| Erreur imprévue | 500 | Erreur interne du serveur |
+
+**Une erreur imprévue ne laisse rien fuiter.** Son détail (message technique, pile d'appels, adresse de la base) part seulement dans les journaux du serveur : le client ne reçoit que le message générique, qui ne donne aucune prise à un attaquant.
 
 ### Exemple réel : la route de santé
 
