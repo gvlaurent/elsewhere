@@ -13,7 +13,8 @@ Objectif : ne rien perdre, laisser une trace utile au Dossier RNCP, et savoir ex
    - worktrees existants : `git worktree list`, puis `git status` dans chacun. Signaler ceux dont la branche est déjà fusionnée (`gh pr list --state merged`) et proposer de les supprimer, après accord ;
    - commits du jour, toutes branches confondues : `git log --all --since=midnight --oneline` ;
    - pull requests ouvertes : `gh pr list` ;
-   - tickets Linear modifiés ou en cours.
+   - tickets Linear modifiés ou en cours ;
+   - carte Floorplan, si du code a changé dans la session : la mettre à jour depuis le dossier principal (sur `main`) et signaler tout problème important de son contrôle de santé (Health), à transformer en ticket.
 2. **Ne rien perdre** : s'il reste des modifications non commitées, proposer un commit de travail en cours sur la branche du ticket (jamais sur `main`), ou noter précisément ce qui reste en suspens.
 3. **Tickets Linear** — proposer :
    - les changements de statut (In Progress, In Review ; Done seulement si la PR est fusionnée) ;

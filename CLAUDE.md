@@ -41,13 +41,23 @@ Le harnais d'Elsewhere est le plugin `mattpocock-skills`. Le plugin `harnais` es
 1. `/grill-with-docs` : se faire questionner sur le besoin, et mettre à jour `GLOSSARY.md` et les ADR au passage.
 2. `/to-spec` puis `/to-tickets` : écrire la spec et la découper en tickets Linear (tranches verticales).
 3. Créer le worktree Orca du ticket, puis `/implement ELS-<n>` : code en TDD (`/tdd`, test d'abord), puis `/code-review`.
-4. `/pr` pour la description, en gardant le modèle `.github/pull_request_template.md` et sa Definition of Done.
-5. `/diagnosing-bugs` pour un bug, `/prototype` pour une question de conception, `/handoff` pour passer la main à une autre session.
+4. « Mets à jour la carte Floorplan » : relire le contrôle de santé (Health) et le travail récent (Recent work), voir la section « Carte du code » ci-dessous.
+5. `/pr` pour la description, en gardant le modèle `.github/pull_request_template.md` et sa Definition of Done.
+6. `/diagnosing-bugs` pour un bug, `/prototype` pour une question de conception, `/handoff` pour passer la main à une autre session.
 
 Skills propres au projet, rangés dans `.claude/skills/` (Pocock ne couvre pas Notion) :
 
 - `expliquer-code-notion` : dès qu'un code est validé.
 - `fin-de-session` : à la fin de chaque session de travail (Linear, Journal Elsewhere, reprise).
+
+## Carte du code : Floorplan
+
+Le plugin `floorplan` (activé dans `.claude/settings.json`) dessine une carte interactive de l'application : ses parties, ses fichiers, ses routes et les services extérieurs, avec un contrôle de santé (clés dans le code, routes sans connexion, fichiers inutilisés).
+
+- La carte vit dans le dossier principal du dépôt (sur `main`), jamais dans un worktree de ticket : `floorplan/` s'ignore lui-même et disparaîtrait avec le worktree.
+- Avant `/pr` : demander « mets à jour la carte Floorplan ». Seuls les fichiers changés sont relus ; le travail du ticket s'allume dans « Recent work ».
+- Un problème important dans Health se corrige dans le ticket, ou devient un ticket Linear.
+- `docs/architecture.md` reste la référence pour le jury. La carte est une aide locale : quand elle montre un écart avec ce document, c'est le document qu'on corrige.
 
 Cursor lit seulement les règles (`.cursor/rules/`) ; les skills sont pour Claude Code.
 
