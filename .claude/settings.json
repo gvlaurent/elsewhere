@@ -1,6 +1,15 @@
 {
+  "extraKnownMarketplaces": {
+    "floorplan": {
+      "source": {
+        "source": "github",
+        "repo": "haydenschmitty/floorplan"
+      }
+    }
+  },
   "enabledPlugins": {
     "harnais@harnais": false,
-    "mattpocock-skills@mattpocock": true
+    "mattpocock-skills@mattpocock": true,
+    "floorplan@floorplan": true
   }
 }
