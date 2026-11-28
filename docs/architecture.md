@@ -115,7 +115,7 @@ flowchart LR
     T1["Poste de dev : Ubuntu, Node 24,<br/>Cursor, Claude Code"]:::code
     T2["GitHub : main protégé,<br/>une PR par ticket"]:::code
     T3["Intégration continue (GitHub Actions) :<br/>lint + tests à chaque push (ELS-14)"]:::code
-    T4["Hébergement chez Render (ELS-15) :<br/>API + interface sur une seule adresse,<br/>déployées si la CI est verte"]:::decide
+    T4["Hébergement chez Render (ELS-15) :<br/>API + interface sur une seule adresse,<br/>déployées si la CI est verte"]:::code
     T5["Supabase : PostgreSQL seul,<br/>son API auto fermée par la RLS"]:::code
     T6["Secrets en variables d'environnement,<br/>jamais dans le dépôt"]:::code
     T7["Navigateur de l'auditeur,<br/>mobile et desktop, en HTTPS"]:::decide
@@ -134,7 +134,7 @@ Le détail des outils et de leurs versions est dans `docs/els-11-environnement.m
 
 **L'intégration continue** (`.github/workflows/ci.yml`) rejoue à chaque push, sur une machine neuve de GitHub Actions, ce qu'on lance en local : ESLint et les tests pour l'API, ESLint et la construction pour l'interface. Les tests de base visent Supabase dans un schéma jetable, avec l'adresse de la base rangée dans le secret GitHub `DATABASE_URL` ; sans ce secret, ils sont sautés. Une PR ne peut être fusionnée que si ces deux contrôles sont verts (règle de protection de `main`).
 
-**L'hébergement** est décrit dans `render.yaml` ([ADR-0003](adr/0003-hebergement-sur-render.md)) : l'API (`elsewhere-api`, Node 24, Francfort) et l'interface (`elsewhere-web`, site statique) sont chez Render. Le navigateur ne connaît qu'une adresse, celle de l'interface : Render y transmet `/api/*` à l'API, comme Vite le fait en développement. Les deux services ne se déploient qu'après une CI verte sur `main` ; l'API lance la migration de la base à son démarrage.
+**L'hébergement** est décrit dans `render.yaml` ([ADR-0003](adr/0003-hebergement-sur-render.md)) : l'API (`elsewhere-api`, Node 24, Francfort) et l'interface (`elsewhere-web`, site statique) sont chez Render. Le navigateur ne connaît qu'une adresse, celle de l'interface : Render y transmet `/api/*` à l'API, comme Vite le fait en développement. Les deux services ne se déploient qu'après une CI verte sur `main` ; l'API lance la migration de la base à son démarrage. Adresse de préproduction : <https://elsewhere-web-ifej.onrender.com>.
 
 ## Les couches de l'API
 
