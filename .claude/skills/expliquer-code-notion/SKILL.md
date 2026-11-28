@@ -1,6 +1,6 @@
 ---
 name: expliquer-code-notion
-description: Expliquer ligne par ligne, en français, un fichier de code Elsewhere validé, dans sa sous-page Notion « Code expliqué ligne par ligne », puis vérifier que Gabriel a compris par des questions sans regarder. À utiliser dès qu'un code est validé (tests verts, relecture terminée), quand Gabriel demande d'expliquer un fichier, ou pour une révision des notions « à revoir ».
+description: Expliquer ligne par ligne, en français, un fichier de code Elsewhere validé, dans sa sous-page Notion « Code expliqué ligne par ligne », et ajouter au Journal une ligne « Apprentissage » par notion nouvelle. À utiliser systématiquement dès qu'un code est validé (tests verts, relecture terminée), quand Gabriel demande d'expliquer un fichier, ou pour une révision des notions « à revoir ».
 ---
 
 # Expliquer un code validé dans Notion, et vérifier qu'il est compris
@@ -26,9 +26,8 @@ Objectif : que Gabriel sache lire, expliquer et modifier chaque ligne de son cod
 2. **Découper en blocs logiques** (imports, une fonction, une route, une requête SQL…).
 3. **Vérifier ce qui est déjà expliqué** dans les autres sous-pages, pour ne pas répéter une notion déjà vue : renvoyer vers la page où elle est expliquée.
 4. **Rédiger la sous-page** selon le format ci-dessous.
-5. **Montrer à Gabriel** la liste des blocs et les notions nouvelles avant d'écrire une page entièrement nouvelle ou de réécrire fortement une page existante.
-6. **Écrire dans Notion**, puis donner le lien de la page.
-7. **Vérifier la compréhension** (section suivante), avant de considérer la tâche terminée.
+5. **Écrire dans Notion directement**, sans demander (décision du 28/11/2026), puis donner le lien de la page.
+6. **Vérifier la compréhension** (section suivante) seulement quand Gabriel le demande : depuis le 28/11/2026, il produit d'abord et se forme après coup avec ces pages.
 
 ## Format de la sous-page
 
@@ -77,5 +76,5 @@ Une notion comprise le jour même s'oublie en quelques semaines ; le passage du 
 
 ## Après
 
-- Pour chaque notion vraiment nouvelle, **proposer** une ligne au Journal Elsewhere (Type « Apprentissage », Domaine « Apprentissage », Source « Claude Code », Statut « Ouvert », Lien vers la sous-page, Détail : la notion et le résultat de la vérification du jour), puis l'écrire après accord de Gabriel.
-- Rappeler la case de la Definition of Done sur l'explication du code dans la PR : elle ne se coche que si la vérification a été faite.
+- Pour chaque notion vraiment nouvelle, **écrire** une ligne au Journal Elsewhere (Type « Apprentissage », Domaine « Apprentissage », Source « Claude Code », Statut « Ouvert », Lien vers la sous-page, Détail : la notion et le résultat de la vérification, ou « pas encore faite »).
+- Rappeler la case de la Definition of Done sur l'explication du code dans la PR : c'est Gabriel qui la coche, quand il sait expliquer chaque bloc.
