@@ -42,7 +42,7 @@ test('matchesPlace : le champ state contient un alias, sans tenir compte des acc
   assert.equal(matchesPlace({ countrycode: 'CO', state: 'Bogotá D.C.' }, bogota), true);
   assert.equal(matchesPlace({ countrycode: 'NG', state: 'Lagos State' }, lagos), true);
   assert.equal(matchesPlace({ countrycode: 'NG', state: 'Kano' }, lagos), false);
-  assert.equal(matchesPlace({ countrycode: 'NG', state: '' }, lagos), false);
+  assert.equal(matchesPlace({ countrycode: 'NG', state: '', name: 'Beat FM' }, lagos), false);
   // Même texte, autre pays : pas ce lieu.
   assert.equal(matchesPlace({ countrycode: 'GH', state: 'Lagos' }, lagos), false);
 });
@@ -125,4 +125,45 @@ test('renvoie la station au format de la base, nom nettoyé, site gardé seuleme
     streamUrl: station.url_resolved,
     homepageUrl: null,
   });
+});
+
+// Règle de rattachement décidée par Gabriel le 28/11/2026 : la région
+// (« state ») d'abord, sinon le nom de la station.
+const dakar = {
+  name: 'Dakar', countryCode: 'SN', countryName: 'Sénégal', timezone: 'Africa/Dakar',
+  stateAliases: ['Dakar'],
+};
+
+test('state vide : une station du Sénégal dont le nom contient « Dakar » est rattachée à Dakar', () => {
+  const station = rbStation({ countrycode: 'SN', state: '', name: 'Radio Dakar FM' });
+  const accents = rbStation({ countrycode: 'SN', state: '', name: 'DAKÂR musique' });
+
+  const { places, countries } = selectStations({ SN: [station, accents] }, [dakar]);
+
+  assert.deepEqual(places[0].kept.map((s) => s.externalId), [station.stationuuid, accents.stationuuid]);
+  assert.equal(countries[0].unknownPlace, 0);
+});
+
+test('state vide et nom sans aucun alias : la station est écartée, « lieu inconnu »', () => {
+  const station = rbStation({ countrycode: 'SN', state: '', name: 'Zik FM' });
+
+  const { places, countries } = selectStations({ SN: [station] }, [dakar]);
+
+  assert.equal(places[0].kept.length, 0);
+  assert.equal(countries[0].unknownPlace, 1);
+});
+
+test('state rempli qui ne correspond pas : écartée, même si le nom contient l\'alias', () => {
+  const station = rbStation({ countrycode: 'SN', state: 'Saint-Louis', name: 'Dakar Musique' });
+
+  const { places, countries } = selectStations({ SN: [station] }, [dakar]);
+
+  assert.equal(places[0].kept.length, 0);
+  assert.equal(countries[0].unknownPlace, 1);
+});
+
+test('le nom ne sert jamais hors du pays du lieu', () => {
+  const station = rbStation({ countrycode: 'FR', state: '', name: 'Dakar Paris' });
+
+  assert.equal(matchesPlace(station, dakar), false);
 });

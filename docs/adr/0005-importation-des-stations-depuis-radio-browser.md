@@ -21,14 +21,20 @@ La page d'Elsewhere est en HTTPS : un navigateur y bloque un flux en `http://` (
 **Le tri vit dans un module pur** (`api/src/services/station-selection.js`), sans réseau ni base, donc testable seul. Dans l'ordre :
 
 1. **invalide** : `stationuuid` qui n'est pas un UUID, ou nom vide ;
-2. **lieu inconnu** : le champ `state` ne contient l'alias d'aucun lieu du pays (comparaison sans majuscules ni accents) ;
+2. **lieu inconnu** : la station ne se rattache à aucun lieu de son pays, selon la règle « la région d'abord, sinon le nom » ci-dessous ;
 3. **hors ligne** : `lastcheckok` différent de 1 ;
 4. **pas en HTTPS** : l'adresse du flux (`url_resolved`, sinon `url`) n'est pas en `https://` ;
 5. **doublon** : même identifiant, même flux, ou même nom dans le même lieu qu'une station déjà gardée. La plus votée est gardée.
 
 Le rattachement passe avant les autres règles : ainsi « hors ligne », « pas en HTTPS » et « doublon » se comptent lieu par lieu, et « lieu inconnu » et « invalide » pays par pays.
 
-**Le rattachement se fait par alias**, définis lieu par lieu dans `api/src/config/starting-places.js` (Lagos, Lagos State ; Lisboa, Lisbon…). Les stations sont demandées pays par pays (`/json/stations/bycountrycodeexact/NG`), puis réparties entre les lieux. Un pays n'est demandé qu'une fois, même s'il a plusieurs lieux. `hidebroken` n'est pas demandé : le service écarte lui-même les stations hors ligne, et peut les compter.
+**Le rattachement se fait par alias**, définis lieu par lieu dans `api/src/config/starting-places.js` (Lagos ; Lisboa, Lisbon…), avec la règle « **la région d'abord, sinon le nom** », décidée par Gabriel le 28/11/2026 et la même pour tous les lieux, toujours dans le pays du lieu :
+
+1. si le champ `state` est rempli, il doit contenir l'un des alias ;
+2. si le champ `state` est vide, c'est le nom de la station qui doit contenir l'un des alias (« Radio Dakar FM ») ;
+3. sinon, la station est écartée comme « lieu inconnu ».
+
+Un `state` rempli qui ne correspond à aucun alias reste un refus : on ne se rabat pas sur le nom, la région renseignée fait foi. Les comparaisons ignorent majuscules et accents, et un alias n'a qu'à être contenu dans le texte. Les stations sont demandées pays par pays (`/json/stations/bycountrycodeexact/NG`), puis réparties entre les lieux. Un pays n'est demandé qu'une fois, même s'il a plusieurs lieux. `hidebroken` n'est pas demandé : le service écarte lui-même les stations hors ligne, et peut les compter.
 
 **L'importation lit tout avant d'écrire, puis écrit en une transaction** (`api/src/db/transaction.js`). Si l'annuaire ne répond pas, rien n'est écrit et le cache garde ses stations d'avant. Les stations sont écrites en une requête par lieu (`INSERT … SELECT FROM unnest(…) ON CONFLICT (external_id) DO UPDATE`), en SQL paramétré. Une station déjà connue n'est réécrite que si elle a changé, et son statut (`active` ou `hidden`) n'est jamais modifié : une station masquée par un admin le reste (C10).
 
@@ -45,5 +51,6 @@ Le rattachement passe avant les autres règles : ainsi « hors ligne », « pas 
 
 - Les tests simulent Radio Browser (faux `fetch`, faux DNS) : `npm test` ne fait aucun appel réseau vers l'annuaire.
 - Une station qui disparaît de l'annuaire, ou qui passe hors ligne, reste dans le cache : la retirer relève de la synchro de chaque nuit (ELS-37, C10).
-- Le compte « lieu inconnu » montre qu'un alias manque. Le 28/11/2026, **aucune** station du Sénégal n'a de champ `state` rempli : Dakar n'a donc aucune station avec cette règle. Une autre règle pour ce cas est une décision de produit, à prendre dans un ticket.
-- Mesure du point ouvert d'ELS-6 (essai du 28/11/2026, 6 lieux) : sur 224 stations en ligne rattachées à un lieu, 62 n'ont qu'un flux en `http://`, soit environ **28 % de stations illisibles** dans une page HTTPS.
+- Le compte « lieu inconnu » montre qu'un alias manque. Le 28/11/2026, **aucune** station du Sénégal n'a de champ `state` rempli : avec la région seule, Dakar n'avait aucune station. C'est ce qui a motivé le repli sur le nom de la station.
+- Le repli sur le nom peut se tromper dans un cas rare : une station sans région, dont le nom cite une ville sans y émettre. Le risque est accepté : la station reste dans le bon pays, et un auditeur peut la signaler (C8).
+- Mesure du point ouvert d'ELS-6 (essai du 28/11/2026, 6 lieux) : sur 254 stations en ligne rattachées à un lieu, 75 n'ont qu'un flux en `http://`, soit environ **30 % de stations illisibles** dans une page HTTPS.

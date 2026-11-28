@@ -8,7 +8,9 @@
 //
 // Chaque lieu donne ce que la table places attend (nom, pays, fuseau IANA
 // pour l'heure locale) et, en plus, ses alias : les textes cherchés dans le
-// champ libre « state » de Radio Browser pour rattacher une station au lieu.
+// champ libre « state » de Radio Browser pour rattacher une station au lieu,
+// ou dans le nom de la station quand ce champ est vide (règle « la région
+// d'abord, sinon le nom », décidée le 28/11/2026).
 // Ce champ varie (« Lagos », « Lagos State », « Greater Accra », avec ou
 // sans accent) : la comparaison ignore majuscules et accents, et un alias
 // n'a qu'à être contenu dans le champ (voir station-selection.js). Si le

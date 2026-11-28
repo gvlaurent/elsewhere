@@ -112,7 +112,7 @@ flowchart LR
     classDef externe fill:#ffffff,stroke:#333333,stroke-dasharray:4 3,color:#000
 ```
 
-- **Le son ne passe pas par l'API** : le lecteur lit directement le flux de la station, sans relais, pour ne pas surcharger le serveur. Conséquence, tranchée avec ELS-22 : une page en HTTPS ne peut lire que des flux en HTTPS, donc seules les stations à flux `https://` entrent dans le cache (environ 28 % des stations en ligne sont écartées pour cette raison, [ADR-0005](adr/0005-importation-des-stations-depuis-radio-browser.md)).
+- **Le son ne passe pas par l'API** : le lecteur lit directement le flux de la station, sans relais, pour ne pas surcharger le serveur. Conséquence, tranchée avec ELS-22 : une page en HTTPS ne peut lire que des flux en HTTPS, donc seules les stations à flux `https://` entrent dans le cache (environ 30 % des stations en ligne sont écartées pour cette raison, [ADR-0005](adr/0005-importation-des-stations-depuis-radio-browser.md)).
 - **Le navigateur ne parle jamais à l'annuaire** (C11) : l'API recopie les stations dans sa base et les sert depuis là. Aujourd'hui par la commande `npm run stations:import` (ELS-22), demain chaque nuit (ELS-37).
 - **Supabase sert uniquement de base** : authentification, règles d'accès et validation sont codées dans l'API. Son API automatique est fermée : la sécurité par ligne (RLS) est activée sur chaque table, sans aucune règle (voir `docs/donnees.md`).
 
@@ -381,10 +381,10 @@ sequenceDiagram
 ```
 
 - **Seuls les flux `https://` entrent dans le cache** : une page en HTTPS ne peut pas lire un flux en `http://`.
-- **Une station est rattachée à un lieu par alias** : son champ libre `state` doit contenir l'un des alias du lieu, sans tenir compte des majuscules ni des accents. Sinon elle est écartée comme « lieu inconnu », comptée par pays.
+- **Une station est rattachée à un lieu par alias, « la région d'abord, sinon le nom »** : si son champ libre `state` est rempli, il doit contenir l'un des alias du lieu ; s'il est vide, c'est le nom de la station qui doit en contenir un. Toujours dans le pays du lieu, sans tenir compte des majuscules ni des accents. Sinon elle est écartée comme « lieu inconnu », comptée par pays. Un `state` rempli qui ne correspond pas n'est jamais rattrapé par le nom.
 - **Pas de doublon** : à l'intérieur d'une importation (même identifiant, même flux, même nom dans un lieu), et d'une importation à l'autre (`ON CONFLICT (external_id)`).
 - **Une station masquée par un admin le reste** : l'importation ne touche jamais au statut.
-- **Limites connues** : une station qui disparaît de l'annuaire reste dans le cache jusqu'à la synchro de chaque nuit (ELS-37). Les stations du Sénégal n'ont pas de champ `state` : Dakar n'a aucune station avec la règle actuelle (à trancher dans un ticket).
+- **Limites connues** : une station qui disparaît de l'annuaire reste dans le cache jusqu'à la synchro de chaque nuit (ELS-37). Le repli sur le nom peut rattacher par erreur une station sans région dont le nom cite une ville où elle n'émet pas ; elle reste dans le bon pays.
 
 ### Exemple réel : la route de santé
 

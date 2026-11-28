@@ -6,8 +6,9 @@
 //
 // Les règles, dans l'ordre où elles s'appliquent à une station :
 // 1. invalide : identifiant (stationuuid) qui n'est pas un UUID, ou nom vide ;
-// 2. lieu inconnu : son champ « state » ne contient l'alias d'aucun lieu de
-//    son pays. Ce compte se fait par pays, puisque la station n'a pas de lieu ;
+// 2. lieu inconnu : ni sa région (« state »), ni, si la région est vide,
+//    son nom ne contient l'alias d'un lieu de son pays (voir matchesPlace).
+//    Ce compte se fait par pays, puisque la station n'a pas de lieu ;
 // 3. hors ligne : le dernier test de Radio Browser a échoué (lastcheckok = 0) ;
 // 4. pas en HTTPS : la page d'Elsewhere est en HTTPS, et un navigateur y
 //    bloque un flux en http:// (contenu mixte). Une station illisible ne
@@ -31,15 +32,24 @@ export function normalizeText(text) {
     .trim();
 }
 
-// Dit si une station brute appartient à un lieu : même pays, et son champ
-// « state » contient l'un des alias du lieu. Reçoit la station
-// ({ countrycode, state }) et le lieu ({ countryCode, stateAliases }).
-// Renvoie true ou false.
+// Dit si une station brute appartient à un lieu. Règle décidée par Gabriel
+// le 28/11/2026, la même pour tous les lieux : « la région d'abord, sinon
+// le nom », toujours dans le pays du lieu.
+// 1. Le champ « state » est rempli : il doit contenir l'un des alias.
+// 2. Le champ « state » est vide : c'est le nom de la station qui doit
+//    contenir l'un des alias (ex. « Radio Dakar FM » pour Dakar, dont
+//    aucune station n'a de « state » dans Radio Browser).
+// Un « state » rempli qui ne correspond pas reste un refus : on ne se
+// rabat pas sur le nom, la région renseignée fait foi.
+// Comparaisons sans majuscules ni accents, sous forme de « contient ».
+// Reçoit la station ({ countrycode, state, name }) et le lieu
+// ({ countryCode, stateAliases }). Renvoie true ou false.
 export function matchesPlace(station, place) {
   if (station.countrycode.toUpperCase() !== place.countryCode) return false;
   const state = normalizeText(station.state);
-  if (!state) return false;
-  return place.stateAliases.some((alias) => state.includes(normalizeText(alias)));
+  const searched = state || normalizeText(station.name);
+  if (!searched) return false;
+  return place.stateAliases.some((alias) => searched.includes(normalizeText(alias)));
 }
 
 // Lit une adresse web et la renvoie seulement si elle est en http ou https.
