@@ -3,6 +3,7 @@
 import { Router } from 'express';
 import healthRoutes from './health-routes.js';
 import { createAuthRoutes } from './auth-routes.js';
+import { createMomentsRoutes } from './moments-routes.js';
 
 // Fabrique le routeur de l'API. Ne reçoit rien ; renvoie un routeur Express
 // neuf à chaque appel (voir createAuthRoutes).
@@ -11,6 +12,7 @@ export function createRoutes() {
 
   router.use('/health', healthRoutes);
   router.use('/auth', createAuthRoutes());
+  router.use('/moments', createMomentsRoutes());
 
   return router;
 }
