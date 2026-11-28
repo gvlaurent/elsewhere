@@ -54,8 +54,9 @@ Skills propres au projet, rangés dans `.claude/skills/` (Pocock ne couvre pas N
 
 Le plugin `floorplan` (activé dans `.claude/settings.json`) dessine une carte interactive de l'application : ses parties, ses fichiers, ses routes et les services extérieurs, avec un contrôle de santé (clés dans le code, routes sans connexion, fichiers inutilisés).
 
-- La carte vit dans le dossier principal du dépôt (sur `main`), jamais dans un worktree de ticket : `floorplan/` s'ignore lui-même et disparaîtrait avec le worktree.
-- Avant `/pr` : demander « mets à jour la carte Floorplan ». Seuls les fichiers changés sont relus ; le travail du ticket s'allume dans « Recent work ».
+- La carte de référence vit dans le dossier principal du dépôt (sur `main`) : `floorplan/` s'ignore lui-même et disparaîtrait avec un worktree.
+- Avant `/pr` : demander « mets à jour la carte Floorplan ». Le code du ticket n'existe que dans son worktree : on y copie `floorplan/` depuis le dossier principal, on la met à jour là (seuls les fichiers changés sont relus ; le travail du ticket s'allume dans « Recent work ») et on relit Health.
+- Après la fusion : `git pull` dans le dossier principal, puis on y recopie la carte du worktree (sans `.cache/`) **avant** de supprimer le worktree.
 - Un problème important dans Health se corrige dans le ticket, ou devient un ticket Linear.
 - `docs/architecture.md` reste la référence pour le jury. La carte est une aide locale : quand elle montre un écart avec ce document, c'est le document qu'on corrige.
 
