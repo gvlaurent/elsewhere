@@ -38,6 +38,8 @@ flowchart LR
     subgraph API["API Express, in layers"]
         direction TB
         R["Routes + input validation<br/>+ session check (401)"]:::code --> C["Controllers"]:::code --> S["Services<br/>(business rules;<br/>accounts built)"]:::decide --> D["Data access<br/>(parameterized SQL)"]:::code
+        I["npm run stations:import"]:::code --> SI["Station import service<br/>(HTTPS only, offline and<br/>duplicates dropped, place)"]:::code --> D
+        SI --> RC["Radio Browser client<br/>(DNS servers, timeout)"]:::code
     end
     DB[("PostgreSQL on Supabase<br/>9 tables + sessions")]:::code
     RS["Station streams<br/>(audio + ICY metadata)"]:::externe
@@ -47,14 +49,14 @@ flowchart LR
     D -- "SQL" --> DB
     W -- "live audio" --> RS
     S -- "reads now-playing titles" --> RS
-    S -- "nightly station sync" --> RB
+    RC -- "copies stations<br/>(nightly sync later)" --> RB
 
     classDef code fill:#d3f9d8,stroke:#2b8a3e,color:#000
     classDef decide fill:#d0ebff,stroke:#1c7ed6,color:#000
     classDef externe fill:#ffffff,stroke:#333333,stroke-dasharray:4 3,color:#000
 ```
 
-Green blocks are built (the layers are in place with `GET /api/health`, the 9-table database schema, and accounts: sign-up, log-in and log-out, with Argon2id password hashes and server-side sessions in an HttpOnly cookie), blue ones are decided but not built yet. The data model (conceptual and logical models, data dictionary) is in [`docs/donnees.md`](docs/donnees.md) (in French). Four views (business, functional, application, infrastructure), the status of each block (built, decided, still open) and the request walkthroughs are in [`docs/architecture.md`](docs/architecture.md) (in French). It is updated in every pull request that changes the architecture.
+Green blocks are built (the layers are in place with `GET /api/health`, the 9-table database schema, accounts: sign-up, log-in and log-out, with Argon2id password hashes and server-side sessions in an HttpOnly cookie, and the station import from Radio Browser, which keeps only HTTPS streams), blue ones are decided but not built yet. The data model (conceptual and logical models, data dictionary) is in [`docs/donnees.md`](docs/donnees.md) (in French). Four views (business, functional, application, infrastructure), the status of each block (built, decided, still open) and the request walkthroughs are in [`docs/architecture.md`](docs/architecture.md) (in French). It is updated in every pull request that changes the architecture.
 
 ## How the work is run
 

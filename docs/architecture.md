@@ -1,6 +1,6 @@
 # Architecture d'Elsewhere
 
-État au 28 novembre 2026 (ELS-17). Ce document décrit Elsewhere en quatre vues, du métier à l'infrastructure, puis détaille les couches de l'API et le déroulé de deux requêtes. Il complète la section 7 du PRD (`docs/prd.md`) et **il est mis à jour dans chaque pull request qui change l'architecture** (voir la dernière section).
+État au 28 novembre 2026 (ELS-22). Ce document décrit Elsewhere en quatre vues, du métier à l'infrastructure, puis détaille les couches de l'API et le déroulé de deux requêtes. Il complète la section 7 du PRD (`docs/prd.md`) et **il est mis à jour dans chaque pull request qui change l'architecture** (voir la dernière section).
 
 ## Pourquoi ce document
 
@@ -53,7 +53,7 @@ Les fonctions de l'application, regroupées par grand domaine (les « quartiers 
 | Thèmes (F2) | Titre en cours : jamais de faux titre | Listes personnalisées (F8) | Consentement à l'inscription (C2) | Masquer / réactiver (F10) |
 | | Signaler une station en panne (C8) | Raccourcis (F11) | Export et suppression (F7) | Rôles vérifiés par l'API |
 
-Côté API, le compte, la connexion (F4) et la déconnexion de C1 sont codés (ELS-17) ; les écrans viendront avec ELS-21. Les autres fonctions sont décidées, pas encore codées.
+Côté API, le compte, la connexion (F4) et la déconnexion de C1 sont codés (ELS-17) ; les écrans viendront avec ELS-21. Le remplissage du cache des stations (F9) est codé sous forme d'une commande lancée à la main (ELS-22) ; la tâche de chaque nuit viendra avec ELS-37. Les autres fonctions sont décidées, pas encore codées.
 
 ## 3. Vue applicative : composants et flux
 
@@ -72,15 +72,20 @@ flowchart LR
         direction TB
         A1["Routes · validation des entrées (400)"]:::code
         A2["Contrôleurs"]:::code
-        A3["Services (logique métier) : stations,<br/>titres, moments, listes, admin<br/>+ droits d'accès"]:::decide
+        A3["Services (logique métier) : titres,<br/>moments, listes, admin<br/>+ droits d'accès"]:::decide
         A3b["Service des comptes : inscription,<br/>connexion, déconnexion (ELS-17)"]:::code
-        A4["Accès aux données : SQL paramétré<br/>(comptes et sessions, ELS-13 et ELS-17)"]:::code
+        A3c["Service d'importation des stations :<br/>HTTPS seulement, hors ligne et doublons<br/>écartés, rattachement au lieu (ELS-22)"]:::code
+        A4["Accès aux données : SQL paramétré<br/>(comptes, sessions, lieux, stations)"]:::code
+        A4b["Client Radio Browser : serveurs par DNS,<br/>délai maximal (ELS-22)"]:::code
+        A10["Commande npm run stations:import<br/>(ELS-22)"]:::code
         A1 --> A2 --> A3 --> A4
         A2 --> A3b --> A4
+        A10 --> A3c --> A4
+        A3c --> A4b
         A5["Middleware de session requireAuth :<br/>qui es-tu ? (401) ; essais limités (429)"]:::code
         A9["Erreurs centrales : 400, 404, 500"]:::code
         A6["Relevé du titre (ICY) + classification"]:::decide
-        A7["Tâche nocturne de synchro"]:::decide
+        A7["Tâche nocturne de synchro<br/>(ELS-37, réutilise l'importation)"]:::decide
         A8["GET /api/health<br/>codée en couches (ELS-12)"]:::code
     end
 
@@ -98,7 +103,8 @@ flowchart LR
     A4 -- "SQL" --> DB
     N3 -- "audio en direct" --> X1
     A6 -- "lit les métadonnées" --> X1
-    A7 -- "recopie les stations" --> X2
+    A4b -- "recopie les stations<br/>(HTTPS · JSON)" --> X2
+    A7 -.-> A3c
 
     classDef code fill:#d3f9d8,stroke:#2b8a3e,color:#000
     classDef decide fill:#d0ebff,stroke:#1c7ed6,color:#000
@@ -106,8 +112,8 @@ flowchart LR
     classDef externe fill:#ffffff,stroke:#333333,stroke-dasharray:4 3,color:#000
 ```
 
-- **Le son ne passe pas par l'API** : le lecteur lit directement le flux de la station, sans relais, pour ne pas surcharger le serveur. Conséquence encore à trancher : une page en HTTPS ne peut lire que des flux en HTTPS (vue technique).
-- **Le navigateur ne parle jamais à l'annuaire** (C11) : l'API recopie les stations chaque nuit et les sert depuis sa base.
+- **Le son ne passe pas par l'API** : le lecteur lit directement le flux de la station, sans relais, pour ne pas surcharger le serveur. Conséquence, tranchée avec ELS-22 : une page en HTTPS ne peut lire que des flux en HTTPS, donc seules les stations à flux `https://` entrent dans le cache (environ 30 % des stations en ligne sont écartées pour cette raison, [ADR-0005](adr/0005-importation-des-stations-depuis-radio-browser.md)).
+- **Le navigateur ne parle jamais à l'annuaire** (C11) : l'API recopie les stations dans sa base et les sert depuis là. Aujourd'hui par la commande `npm run stations:import` (ELS-22), demain chaque nuit (ELS-37).
 - **Supabase sert uniquement de base** : authentification, règles d'accès et validation sont codées dans l'API. Son API automatique est fermée : la sécurité par ligne (RLS) est activée sur chaque table, sans aucune règle (voir `docs/donnees.md`).
 
 ## 4. Vue technique : où ça tourne
@@ -121,7 +127,7 @@ flowchart LR
     T5["Supabase : PostgreSQL seul,<br/>son API auto fermée par la RLS"]:::code
     T6["Secrets en variables d'environnement,<br/>jamais dans le dépôt"]:::code
     T7["Navigateur de l'auditeur,<br/>mobile et desktop, en HTTPS"]:::decide
-    T8["Flux des stations : seuls les flux<br/>HTTPS sont lisibles"]:::trancher
+    T8["Flux des stations : seuls les flux<br/>HTTPS entrent dans le cache (ELS-22)"]:::code
 
     T1 --> T2 --> T3 --> T4 --> T5
     T7 --> T4
@@ -179,7 +185,9 @@ api/src/
 │   └── http-error.js         erreur prévue, qui porte son code HTTP
 ├── config/
 │   ├── zod.js                Zod réglé en français ; tout schéma importe z d'ici
-│   └── session.js            durée de la session, nom et options du cookie
+│   ├── session.js            durée de la session, nom et options du cookie
+│   ├── starting-places.js    les 6 lieux de départ, leur fuseau et leurs alias (ELS-22)
+│   └── starting-places.test.js
 ├── controllers/
 │   ├── health-controller.js
 │   └── auth-controller.js    pose et efface le cookie de session
@@ -190,16 +198,32 @@ api/src/
 │   ├── password-hashing.js   hachage Argon2id des mots de passe, 4 calculs à la fois au plus
 │   ├── password-hashing.test.js
 │   ├── limit-concurrency.js  file d'attente : au plus N tâches asynchrones en même temps
-│   └── limit-concurrency.test.js
+│   ├── limit-concurrency.test.js
+│   ├── station-selection.js  règles du tri des stations : lieu, hors ligne, HTTPS, doublons
+│   ├── station-selection.test.js   sur des stations simulées, sans base ni réseau
+│   ├── stations-import-service.js   annuaire → tri → base, en une transaction
+│   └── stations-import-service.test.js   annuaire simulé : en erreur, trop lent, 2e importation
+├── clients/
+│   ├── radio-browser-client.js   l'annuaire Radio Browser : serveurs par DNS, délai, User-Agent
+│   └── radio-browser-client.test.js   faux fetch et faux DNS : aucun appel réseau
+├── commands/
+│   ├── import-stations.js    npm run stations:import : lance l'importation, affiche le rapport
+│   └── import-stations.test.js
 ├── repositories/
 │   ├── users-repository.js   comptes : créer, chercher par e-mail (SQL paramétré)
 │   ├── users-repository.test.js   dont la preuve contre l'injection SQL
 │   ├── sessions-repository.js   sessions : créer, retrouver le membre, supprimer
-│   └── sessions-repository.test.js
+│   ├── sessions-repository.test.js
+│   ├── places-repository.js  lieux : créer ou mettre à jour (ON CONFLICT)
+│   ├── places-repository.test.js
+│   ├── stations-repository.js   stations : insérer ou mettre à jour sans doublon (ON CONFLICT)
+│   └── stations-repository.test.js
 ├── db/
 │   ├── pool.js               connexion à PostgreSQL (réserve de connexions, TLS vérifié)
 │   ├── pool.test.js
 │   ├── migrate.js            applique les migrations dans l'ordre (npm run db:migrate)
+│   ├── transaction.js        withTransaction : plusieurs écritures en tout ou rien
+│   ├── transaction.test.js
 │   ├── migrations/
 │   │   ├── 001_initial_schema.sql   les 9 tables, contraintes, index, déclencheur, RLS
 │   │   └── 002_sessions.sql      la table des sessions de connexion (ELS-17)
@@ -211,6 +235,11 @@ api/src/
 ```
 
 Chaque ressource (santé, stations, moments…) a un fichier dans chaque couche, nommé `<ressource>-<couche>.js`, en kebab-case comme le veut `CONTRIBUTING.md`.
+
+Deux dossiers ne sont pas des couches de requête HTTP :
+
+- `clients/` appartient à la couche d'accès aux données, mais pour une source extérieure : un client sait parler à un service du dehors (ici Radio Browser) et ne décide d'aucune règle métier ;
+- `commands/` contient les commandes lancées à la main avec `npm run`. Comme un contrôleur, une commande ne fait que brancher les vraies dépendances (pool, client) sur un service et mettre son résultat en forme.
 
 ### Accès aux données et base
 
@@ -320,6 +349,43 @@ sequenceDiagram
 - **La déconnexion supprime la session en base** : un cookie copié ne sert plus à rien (C1).
 - **La connexion ne révèle pas qui est inscrit** : e-mail inconnu et mauvais mot de passe reçoivent la même réponse 401, en un temps comparable.
 - **Une route protégée** branche `requireAuth` avant son contrôleur et lit le membre dans `req.user`. Les droits (« ce moment est-il à toi ? ») restent vérifiés dans le service.
+
+### Importation des stations (ELS-22)
+
+La commande `npm run stations:import` (depuis `api/`) remplit le cache des stations pour les lieux de `config/starting-places.js`. Elle n'a pas de route HTTP : elle est lancée à la main, et la tâche de chaque nuit (ELS-37) appellera le même service. Les choix sont expliqués dans l'[ADR-0005](adr/0005-importation-des-stations-depuis-radio-browser.md).
+
+```mermaid
+sequenceDiagram
+    participant K as Commande stations:import
+    participant S as Service d'importation
+    participant RB as Client Radio Browser
+    participant X as Radio Browser
+    participant T as Tri (station-selection)
+    participant D as Repositories lieux et stations
+    participant B as PostgreSQL
+    K->>S: importStations(pool, { client, places })
+    loop un appel par pays (SN, NG, GH, CO, TR, PT)
+        S->>RB: searchStationsByCountry('NG')
+        RB->>X: GET /json/stations/bycountrycodeexact/NG (User-Agent Elsewhere/0.1, 10 s max)
+        X-->>RB: stations brutes
+        RB-->>S: stations réduites aux champs utiles
+    end
+    Note over S,RB: un serveur en panne ou trop lent : on essaie le suivant ; tous en panne : erreur, rien n'est écrit
+    S->>T: selectStations(stations par pays, lieux)
+    T-->>S: par lieu : stations gardées + écartées par raison
+    S->>D: BEGIN, puis upsertPlace et upsertStations pour chaque lieu
+    D->>B: INSERT … ON CONFLICT … (SQL paramétré)
+    S->>D: COMMIT
+    S-->>K: rapport
+    K->>K: affiche gardées et écartées, lieu par lieu et pays par pays
+```
+
+- **Seuls les flux `https://` entrent dans le cache** : une page en HTTPS ne peut pas lire un flux en `http://`.
+- **L'annuaire est joint sans serveur codé en dur** : la liste vient du DNS ; si elle est vide ou si le DNS échoue, le client se replie sur `all.api.radio-browser.info`, le nom officiel qui répartit les demandes.
+- **Une station est rattachée à un lieu par alias, « la région d'abord, sinon le nom »** : si son champ libre `state` est rempli, il doit contenir l'un des alias du lieu ; s'il est vide, c'est le nom de la station qui doit en contenir un. Toujours dans le pays du lieu, sans tenir compte des majuscules ni des accents. Sinon elle est écartée comme « lieu inconnu », comptée par pays. Un `state` rempli qui ne correspond pas n'est jamais rattrapé par le nom.
+- **Pas de doublon** : à l'intérieur d'une importation (même identifiant, même flux, même nom dans un lieu), et d'une importation à l'autre (`ON CONFLICT (external_id)`).
+- **Une station masquée par un admin le reste** : l'importation ne touche jamais au statut.
+- **Limites connues** : une station qui disparaît de l'annuaire reste dans le cache jusqu'à la synchro de chaque nuit (ELS-37). Le repli sur le nom peut rattacher par erreur une station sans région dont le nom cite une ville où elle n'émet pas ; elle reste dans le bon pays.
 
 ### Exemple réel : la route de santé
 

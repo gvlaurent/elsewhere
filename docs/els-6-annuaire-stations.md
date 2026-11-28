@@ -56,7 +56,7 @@ Tirées de la documentation officielle ([https://api.radio-browser.info/](https:
 - **Risque :** droits de diffusion d'un pays à l'autre (Radio Garden restreint au Royaume-Uni, interdit en Turquie) => **Parade :** Elsewhere ne relaie jamais le son. Le navigateur de l'utilisateur lit directement le flux officiel de la station. Le projet est non commercial, et une station peut demander son retrait par un contact affiché dans l'application.
 - **Risque :** tags libres, aucun tri musique/parole fiable => **Parade :** le produit minimum ne propose pas ce tri. Les tags sont affichés tels quels, et un tri fiable est reporté après la soutenance (ELS-57).
 
-**Point ouvert :** une page en `https` ne peut pas lire un flux en `http` (contenu mixte bloqué par les navigateurs). Sans relais du son par le serveur, seuls les flux `https` seront lisibles. Leur part dans Radio Browser reste à mesurer, dans le cadre d'ELS-22 (service stations, filtrage HTTPS).
+~~**Point ouvert**~~ **tranché le 28 novembre 2026 (ELS-22) :** une page en `https` ne peut pas lire un flux en `http` (contenu mixte bloqué par les navigateurs). Sans relais du son par le serveur, seuls les flux `https` sont lisibles : l'importation ne garde qu'eux. Mesure du 28/11/2026 sur les 6 lieux de départ : sur 255 stations en ligne rattachées à un lieu, 75 n'ont qu'un flux en `http`, soit environ 30 % d'écartées pour cette raison (voir l'[ADR-0005](adr/0005-importation-des-stations-depuis-radio-browser.md)).
 
 ## Sources
 
