@@ -10,8 +10,10 @@ import { Icon } from './Icon.jsx'
 export function TabBar() {
   const { user } = useAuth()
   const tabs = [
-    { to: '/', label: 'Lieux', icon: 'pin' },
-    { to: user ? '/compte' : '/connexion', label: 'Compte', icon: 'user' },
+    // L'onglet Lieux reste actif dans le tableau d'un lieu (/lieux/3),
+    // comme sur la maquette 02 : il ne demande pas une adresse exacte.
+    { to: '/lieux', label: 'Lieux', icon: 'pin', end: false },
+    { to: user ? '/compte' : '/connexion', label: 'Compte', icon: 'user', end: true },
   ]
 
   return (
@@ -21,7 +23,7 @@ export function TabBar() {
           <li key={tab.label}>
             {/* NavLink ajoute aria-current="page" sur l'onglet de l'écran
                 affiché : le lecteur d'écran annonce « page actuelle ». */}
-            <NavLink to={tab.to} end className="tab">
+            <NavLink to={tab.to} end={tab.end} className="tab">
               <Icon name={tab.icon} size={24} />
               {tab.label}
             </NavLink>

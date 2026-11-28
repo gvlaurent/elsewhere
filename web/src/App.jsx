@@ -4,12 +4,13 @@
 //
 // React Router lit l'adresse du navigateur et affiche l'écran qui lui
 // correspond, sans recharger la page.
-import { Route, Routes } from 'react-router'
+import { Navigate, Route, Routes } from 'react-router'
 import { Layout } from './components/Layout.jsx'
 import { AccountPage } from './pages/AccountPage.jsx'
-import { HomePage } from './pages/HomePage.jsx'
 import { LoginPage } from './pages/LoginPage.jsx'
 import { NotFoundPage } from './pages/NotFoundPage.jsx'
+import { PlaceBoardPage } from './pages/PlaceBoardPage.jsx'
+import { PlacesPage } from './pages/PlacesPage.jsx'
 import { RegisterPage } from './pages/RegisterPage.jsx'
 
 // Ne reçoit rien ; renvoie l'écran de l'adresse actuelle.
@@ -17,7 +18,10 @@ function App() {
   return (
     <Routes>
       <Route element={<Layout />}>
-        <Route index element={<HomePage />} />
+        {/* L'accueil est l'écran des lieux (maquette 01) : « / » y mène. */}
+        <Route index element={<Navigate to="/lieux" replace />} />
+        <Route path="lieux" element={<PlacesPage />} />
+        <Route path="lieux/:id" element={<PlaceBoardPage />} />
         <Route path="inscription" element={<RegisterPage />} />
         <Route path="connexion" element={<LoginPage />} />
         <Route path="compte" element={<AccountPage />} />

@@ -23,6 +23,26 @@ const ICONS = {
     </>
   ),
   logout: <path d="M15 4h4v16h-4M10 8l-4 4 4 4m-4-4h10" />,
+  chevron: <path d="m9 6 6 6-6 6" />,
+  clock: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 2" />
+    </>
+  ),
+  music: (
+    <>
+      <path d="M9 18V5l11-2v13" />
+      <circle cx="6" cy="18" r="3" />
+      <circle cx="17" cy="16" r="3" />
+    </>
+  ),
+  radio: (
+    <>
+      <circle cx="12" cy="12" r="2" />
+      <path d="M8.5 8.5a5 5 0 0 0 0 7m7 0a5 5 0 0 0 0-7M5.6 5.6a9 9 0 0 0 0 12.8m12.8 0a9 9 0 0 0 0-12.8" />
+    </>
+  ),
 }
 
 // Reçoit le nom de l'icône (une clé de ICONS) et sa taille en pixels ;

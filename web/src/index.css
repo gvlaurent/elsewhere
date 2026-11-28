@@ -264,3 +264,108 @@ a {
   color: var(--primaire);
   font-weight: 600;
 }
+
+/* Lieux et tableau du direct (maquettes 01 et 02, ELS-23). */
+.section h2#places-title {
+  font-size: 20px;
+}
+
+.card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.place-card,
+.station-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 72px;
+  padding: 12px 16px;
+  border: 1px solid #e3e1dc;
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.place-card {
+  color: var(--texte);
+  font-weight: 400;
+  text-decoration: none;
+}
+
+.place-card__badge,
+.station-row__badge {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--primaire-clair);
+  color: var(--primaire);
+}
+
+.place-card__text,
+.station-row__text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.place-card__name,
+.station-row__name {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.place-card__meta,
+.station-row__place,
+.station-row__title {
+  margin: 0;
+  color: var(--texte-secondaire);
+}
+
+.station-row__title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Sans titre : le texte est écrit en italique, avec une icône d'information,
+   et le badge passe au gris. Jamais seulement une couleur (RGAA 3.1). */
+.station-row__title--missing {
+  font-style: italic;
+}
+
+.station-row--no-title .station-row__badge {
+  background: #efeeea;
+  color: var(--texte-secondaire);
+}
+
+.load-error {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.button-secondary {
+  min-height: 48px;
+  border: 2px solid var(--primaire);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--primaire);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.note + .card-list {
+  margin-top: 12px;
+}
