@@ -1,6 +1,6 @@
 # Architecture d'Elsewhere
 
-État au 28 novembre 2026 (ELS-22, ELS-21 et ELS-18). Ce document décrit Elsewhere en quatre vues, du métier à l'infrastructure, puis détaille les couches de l'API et le déroulé de deux requêtes. Il complète la section 7 du PRD (`docs/prd.md`) et **il est mis à jour dans chaque pull request qui change l'architecture** (voir la dernière section).
+État au 28 novembre 2026 (ELS-22, ELS-21, ELS-18 et ELS-19). Ce document décrit Elsewhere en quatre vues, du métier à l'infrastructure, puis détaille les couches de l'API et le déroulé de deux requêtes. Il complète la section 7 du PRD (`docs/prd.md`) et **il est mis à jour dans chaque pull request qui change l'architecture** (voir la dernière section).
 
 ## Pourquoi ce document
 
@@ -53,7 +53,7 @@ Les fonctions de l'application, regroupées par grand domaine (les « quartiers 
 | Thèmes (F2) | Titre en cours : jamais de faux titre | Listes personnalisées (F8) | Consentement à l'inscription (C2) | Masquer / réactiver (F10) |
 | | Signaler une station en panne (C8) | Raccourcis (F11) | Export et suppression (F7) | Rôles vérifiés par l'API |
 
-Le compte, la connexion (F4), la déconnexion de C1 et le consentement à l'inscription (C2) sont codés : l'API avec ELS-17, les écrans avec ELS-21 et ELS-18. Le remplissage du cache des stations (F9) est codé sous forme d'une commande lancée à la main (ELS-22) ; la tâche de chaque nuit viendra avec ELS-37. Les autres fonctions sont décidées, pas encore codées.
+Le compte, la connexion (F4), la déconnexion de C1 et le consentement à l'inscription (C2) sont codés : l'API avec ELS-17, les écrans avec ELS-21 et ELS-18. Le remplissage du cache des stations (F9) est codé sous forme d'une commande lancée à la main (ELS-22) ; la tâche de chaque nuit viendra avec ELS-37. L'API des moments horodatés (F5) est codée (ELS-19) : garder, lister du plus récent au plus ancien, supprimer, chacun réservé à son propriétaire ; leurs écrans et le passeport (F6) viendront avec ELS-26, ELS-21 et ELS-20. Les autres fonctions sont décidées, pas encore codées.
 
 ## 3. Vue applicative : composants et flux
 
@@ -73,14 +73,16 @@ flowchart LR
         direction TB
         A1["Routes · validation des entrées (400)"]:::code
         A2["Contrôleurs"]:::code
-        A3["Services (logique métier) : titres,<br/>moments, listes, admin<br/>+ droits d'accès"]:::decide
+        A3["Services (logique métier) : titres,<br/>listes, admin<br/>+ droits d'accès"]:::decide
         A3b["Service des comptes : inscription,<br/>connexion, déconnexion (ELS-17)"]:::code
+        A3d["Service des moments : garder, lister,<br/>supprimer ; accès propriétaire (404) ;<br/>titre de moins de 5 min (ELS-19)"]:::code
         A3c["Service d'importation des stations :<br/>HTTPS seulement, hors ligne et doublons<br/>écartés, rattachement au lieu (ELS-22)"]:::code
-        A4["Accès aux données : SQL paramétré<br/>(comptes, sessions, lieux, stations)"]:::code
+        A4["Accès aux données : SQL paramétré<br/>(comptes, sessions, lieux, stations,<br/>thèmes, moments)"]:::code
         A4b["Client Radio Browser : serveurs par DNS,<br/>délai maximal (ELS-22)"]:::code
         A10["Commande npm run stations:import<br/>(ELS-22)"]:::code
         A1 --> A2 --> A3 --> A4
         A2 --> A3b --> A4
+        A2 --> A3d --> A4
         A10 --> A3c --> A4
         A3c --> A4b
         A5["Middleware de session requireAuth :<br/>qui es-tu ? (401) ; essais limités (429)"]:::code
@@ -239,7 +241,9 @@ api/src/
 │   ├── index.js              rassemble les routes de chaque ressource
 │   ├── health-routes.js
 │   ├── auth-routes.js        /api/auth : inscription, connexion, déconnexion, me
-│   └── auth-routes.test.js   les comptes de bout en bout, dont les tests de sécurité
+│   ├── auth-routes.test.js   les comptes de bout en bout, dont les tests de sécurité
+│   ├── moments-routes.js     /api/moments : garder, lister, supprimer (session exigée)
+│   └── moments-routes.test.js   les moments de bout en bout : 401, 400, 404, un membre B face aux moments de A
 ├── middlewares/
 │   ├── validate.js           vérifie params, query et body avec un schéma Zod (400)
 │   ├── validate.test.js
@@ -257,7 +261,8 @@ api/src/
 │   └── starting-places.test.js
 ├── controllers/
 │   ├── health-controller.js
-│   └── auth-controller.js    pose et efface le cookie de session
+│   ├── auth-controller.js    pose et efface le cookie de session
+│   └── moments-controller.js lit req.user, répond 201, 200 ou 204
 ├── services/
 │   ├── health-service.js
 │   ├── health-service.test.js   test du service seul, sans serveur
@@ -269,7 +274,11 @@ api/src/
 │   ├── station-selection.js  règles du tri des stations : lieu, hors ligne, HTTPS, doublons
 │   ├── station-selection.test.js   sur des stations simulées, sans base ni réseau
 │   ├── stations-import-service.js   annuaire → tri → base, en une transaction
-│   └── stations-import-service.test.js   annuaire simulé : en erreur, trop lent, 2e importation
+│   ├── stations-import-service.test.js   annuaire simulé : en erreur, trop lent, 2e importation
+│   ├── fresh-title.js        règle « jamais de faux titre » à la lecture : titre de moins de 5 min, sinon null
+│   ├── fresh-title.test.js
+│   ├── moments-service.js    garder, lister, supprimer un moment ; copies, titre, instant ; 404
+│   └── moments-service.test.js   sur des repositories simulés, sans base
 ├── clients/
 │   ├── radio-browser-client.js   l'annuaire Radio Browser : serveurs par DNS, délai, User-Agent
 │   └── radio-browser-client.test.js   faux fetch et faux DNS : aucun appel réseau
@@ -283,8 +292,11 @@ api/src/
 │   ├── sessions-repository.test.js
 │   ├── places-repository.js  lieux : créer ou mettre à jour (ON CONFLICT)
 │   ├── places-repository.test.js
-│   ├── stations-repository.js   stations : insérer ou mettre à jour sans doublon (ON CONFLICT)
-│   └── stations-repository.test.js
+│   ├── stations-repository.js   stations : insérer ou mettre à jour sans doublon (ON CONFLICT) ; lire une station et son lieu
+│   ├── stations-repository.test.js
+│   ├── themes-repository.js  thèmes : lire un thème par son identifiant
+│   ├── moments-repository.js moments : créer (heure locale par AT TIME ZONE), lister, supprimer, toujours filtrés par membre
+│   └── moments-repository.test.js   dont l'heure d'été et l'accès d'un autre membre
 ├── db/
 │   ├── pool.js               connexion à PostgreSQL (réserve de connexions, TLS vérifié)
 │   ├── pool.test.js
@@ -375,7 +387,7 @@ flowchart LR
 | Corps trop gros ou mal encodé | 413, 415 | Requête refusée |
 | Pas de session valide (`requireAuth`) | 401 | Connexion requise |
 | Trop d'échecs de connexion (`login-rate-limit`) | 429 | Trop de tentatives de connexion… |
-| Erreur prévue d'un service (`HttpError`) : identifiants faux, e-mail déjà inscrit… | son code (401, 409…) | son message |
+| Erreur prévue d'un service (`HttpError`) : identifiants faux, e-mail déjà inscrit, station ou moment introuvable… | son code (401, 404, 409…) | son message |
 | Route inconnue sous `/api` | 404 | Ressource introuvable |
 | Erreur imprévue, y compris un code 4xx posé par une autre bibliothèque | 500 | Erreur interne du serveur |
 
@@ -416,6 +428,22 @@ sequenceDiagram
 - **La déconnexion supprime la session en base** : un cookie copié ne sert plus à rien (C1).
 - **La connexion ne révèle pas qui est inscrit** : e-mail inconnu et mauvais mot de passe reçoivent la même réponse 401, en un temps comparable.
 - **Une route protégée** branche `requireAuth` avant son contrôleur et lit le membre dans `req.user`. Les droits (« ce moment est-il à toi ? ») restent vérifiés dans le service.
+
+### Moments (ELS-19)
+
+Les moments (F5) sont codés dans l'API ; leurs écrans viendront avec ELS-26 (« Garder ce moment »), ELS-21 et ELS-20 (« Mes moments », passeport). Les choix sont expliqués dans l'[ADR-0009](adr/0009-moments-acces-proprietaire-et-valeurs-calculees-par-le-serveur.md).
+
+| Route | Middlewares | Réponse |
+| --- | --- | --- |
+| `POST /api/moments` `{ stationId, themeId? }` | `requireAuth`, `validate` | 201 `{ moment }` ; 404 si la station n'existe pas ou est masquée, ou si le thème n'existe pas |
+| `GET /api/moments` | `requireAuth` | 200 `{ moments }` : ceux du membre connecté, du plus récent au plus ancien |
+| `DELETE /api/moments/:id` | `requireAuth`, `validate` | 204 ; 404 si le moment n'existe pas **ou appartient à un autre membre** |
+
+Un moment renvoyé : `id`, `stationId`, `themeId`, `stationName`, `placeName`, `countryCode`, `countryName`, `themeName`, `trackTitle` (`null` = « titre indisponible »), `keptAt` (instant en UTC) et `localTime` (heure sur place, sans fuseau : `2026-11-28T21:30:00`). Jamais `user_id`.
+
+- **L'accès propriétaire est dans le SQL** : le repository filtre toujours par `user_id`, y compris dans le `DELETE` lui-même. Le service transforme « rien supprimé » en 404.
+- **Le même 404 pour « absent » et « pas à toi »** : un 403 révélerait qu'un moment porte ce numéro.
+- **Le navigateur n'envoie que des identifiants.** Les copies, le titre (`freshTitle` : moins de 5 minutes, sinon `null`) et l'instant sont pris par le serveur. L'heure locale est calculée par PostgreSQL avec le fuseau du lieu (`AT TIME ZONE`), heure d'été comprise.
 
 ### Importation des stations (ELS-22)
 
@@ -488,7 +516,7 @@ sequenceDiagram
     J->>N: touche « Garder ce moment »
     N->>R: POST /api/moments { stationId, themeId? }
     alt pas connecté
-        R-->>N: 401 Non authentifié
+        R-->>N: 401 Connexion requise
         N->>N: garde { stationId, themeId } en mémoire
         N-->>J: « Crée ton compte pour garder ce moment »
         J->>N: crée son compte (F4)
@@ -498,19 +526,18 @@ sequenceDiagram
         R-->>N: 400 Requête invalide
     else connecté et format valide
         R->>C: requête + identifiant de l'utilisateur
-        C->>S: keepMoment(userId, stationId, themeId)
+        C->>S: keepMoment(db, userId, { stationId, themeId })
         S->>D: findStationWithPlace(stationId)
         D->>B: SELECT station et son lieu
-        B-->>D: station, dernier titre classé lisible, heure de lecture, fuseau du lieu
+        B-->>D: station, statut, dernier titre classé lisible, heure de lecture, fuseau du lieu
         D-->>S: station et lieu
-        alt station inconnue
-            S-->>C: erreur « station introuvable »
-            C-->>N: 404 Station introuvable
-        else station trouvée
-            S->>S: titre gardé seulement s'il est classé lisible et lu il y a moins de 5 min
-            S->>S: heure locale calculée avec le fuseau du lieu
-            S->>D: createMoment(...)
-            D->>B: INSERT INTO moments
+        alt station inconnue ou masquée, ou thème inconnu
+            S-->>C: HttpError 404
+            C-->>N: 404 Station introuvable (ou Thème introuvable)
+        else station active (et thème trouvé)
+            S->>S: titre gardé seulement s'il est lu il y a moins de 5 min (freshTitle)
+            S->>D: createMoment(copies, titre, instant, fuseau du lieu)
+            D->>B: INSERT INTO moments, heure locale = instant AT TIME ZONE fuseau
             B-->>D: moment enregistré
             D-->>S: moment
             S-->>C: moment
@@ -525,7 +552,7 @@ sequenceDiagram
 - **Le titre est lu par l'API, jamais envoyé par le navigateur.** Le navigateur n'envoie que l'identifiant de la station. Sinon, n'importe qui pourrait enregistrer un titre inventé, ce qui contredirait la règle « jamais de faux titre ».
 - **Deux filtres protègent du faux titre.** Le relevé du titre (bloc A6) ne stocke un titre qu'après l'avoir classé lisible : sans ce tri, la règle actuelle laisserait passer 29 % de faux titres (PRD, écart n° 5). Puis le service ne garde ce titre que s'il a moins de 5 minutes. Ces deux règles métier vivent dans les services : ni la route, ni le contrôleur, ni l'accès aux données ne les connaissent.
 - **Sans compte, le moment n'est pas perdu.** Le navigateur garde la station et le thème pendant l'inscription, puis renvoie la même requête : l'auditeur ne ressaisit rien (F5).
-- **Chaque refus a son code HTTP et sa couche** : 401 et 400 à l'entrée (route et middlewares), 404 quand le service ne trouve pas la station, 201 quand le moment est créé.
+- **Chaque refus a son code HTTP et sa couche** : 401 et 400 à l'entrée (route et middlewares), 404 quand le service ne trouve pas la station (ou la trouve masquée) ou le thème, 201 quand le moment est créé.
 - **L'accès aux données utilise des requêtes paramétrées** : les valeurs reçues ne sont jamais collées dans le texte SQL, ce qui protège des injections SQL.
 
 **À préciser plus tard :**
