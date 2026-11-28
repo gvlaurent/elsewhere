@@ -11,7 +11,10 @@ const options = { skip: skipWithoutDatabase };
 // Code d'erreur PostgreSQL, pour vérifier quelle règle a refusé la donnée.
 const UNIQUE_VIOLATION = '23505';
 const CHECK_VIOLATION = '23514';
-const RESTRICT_VIOLATION = '23001';
+// Piège : ON DELETE RESTRICT ne renvoie pas « restrict_violation » (23001),
+// que PostgreSQL ne lève pas pour une clé étrangère, mais le code commun à
+// toutes les clés étrangères (23503, foreign_key_violation).
+const FOREIGN_KEY_VIOLATION = '23503';
 
 // Insère un lieu, une station et un membre, socle commun de plusieurs tests.
 // Reçoit le pool ; renvoie les identifiants créés.
@@ -119,7 +122,7 @@ test('un lieu qui porte encore des stations ne peut pas être supprimé', option
 
   await assert.rejects(
     db.query('DELETE FROM places WHERE id = $1', [placeId]),
-    { code: RESTRICT_VIOLATION },
+    { code: FOREIGN_KEY_VIOLATION },
   );
 });
 
