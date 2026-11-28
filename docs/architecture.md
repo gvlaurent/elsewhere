@@ -1,6 +1,6 @@
 # Architecture d'Elsewhere
 
-État au 28 novembre 2026 (ELS-15). Ce document décrit Elsewhere en quatre vues, du métier à l'infrastructure, puis détaille les couches de l'API et le déroulé de deux requêtes. Il complète la section 7 du PRD (`docs/prd.md`) et **il est mis à jour dans chaque pull request qui change l'architecture** (voir la dernière section).
+État au 28 novembre 2026 (ELS-17). Ce document décrit Elsewhere en quatre vues, du métier à l'infrastructure, puis détaille les couches de l'API et le déroulé de deux requêtes. Il complète la section 7 du PRD (`docs/prd.md`) et **il est mis à jour dans chaque pull request qui change l'architecture** (voir la dernière section).
 
 ## Pourquoi ce document
 
@@ -53,7 +53,7 @@ Les fonctions de l'application, regroupées par grand domaine (les « quartiers 
 | Thèmes (F2) | Titre en cours : jamais de faux titre | Listes personnalisées (F8) | Consentement à l'inscription (C2) | Masquer / réactiver (F10) |
 | | Signaler une station en panne (C8) | Raccourcis (F11) | Export et suppression (F7) | Rôles vérifiés par l'API |
 
-Toutes ces fonctions sont décidées et aucune n'est encore codée.
+Côté API, le compte, la connexion (F4) et la déconnexion de C1 sont codés (ELS-17) ; les écrans viendront avec ELS-21. Les autres fonctions sont décidées, pas encore codées.
 
 ## 3. Vue applicative : composants et flux
 
@@ -72,17 +72,19 @@ flowchart LR
         direction TB
         A1["Routes · validation des entrées (400)"]:::code
         A2["Contrôleurs"]:::code
-        A3["Services (logique métier) : stations,<br/>titres, comptes, moments, listes, admin<br/>+ droits d'accès"]:::decide
-        A4["Accès aux données : SQL paramétré<br/>(comptes, ELS-13)"]:::code
+        A3["Services (logique métier) : stations,<br/>titres, moments, listes, admin<br/>+ droits d'accès"]:::decide
+        A3b["Service des comptes : inscription,<br/>connexion, déconnexion (ELS-17)"]:::code
+        A4["Accès aux données : SQL paramétré<br/>(comptes et sessions, ELS-13 et ELS-17)"]:::code
         A1 --> A2 --> A3 --> A4
-        A5["Middleware de session (qui es-tu ?)"]:::decide
+        A2 --> A3b --> A4
+        A5["Middleware de session requireAuth :<br/>qui es-tu ? (401) ; essais limités (429)"]:::code
         A9["Erreurs centrales : 400, 404, 500"]:::code
         A6["Relevé du titre (ICY) + classification"]:::decide
         A7["Tâche nocturne de synchro"]:::decide
         A8["GET /api/health<br/>codée en couches (ELS-12)"]:::code
     end
 
-    DB[("PostgreSQL chez Supabase<br/>9 tables, migration 001 (ELS-13)")]:::code
+    DB[("PostgreSQL chez Supabase<br/>9 tables + sessions,<br/>migrations 001 et 002")]:::code
 
     subgraph EXT["Services externes"]
         direction TB
@@ -158,47 +160,59 @@ Deux contrôles d'accès se complètent, chacun dans une seule couche :
 
 ```text
 api/src/
-├── server.js                 démarre l'API sur un port
-├── app.js                    crée l'application, branche toutes les routes sous /api
+├── server.js                 crée le pool de la base et démarre l'API sur un port
+├── app.js                    createApp({ db }) : crée l'application, range le pool, branche les routes sous /api
 ├── routes/
 │   ├── index.js              rassemble les routes de chaque ressource
-│   └── health-routes.js
+│   ├── health-routes.js
+│   ├── auth-routes.js        /api/auth : inscription, connexion, déconnexion, me
+│   └── auth-routes.test.js   les comptes de bout en bout, dont les tests de sécurité
 ├── middlewares/
 │   ├── validate.js           vérifie params, query et body avec un schéma Zod (400)
 │   ├── validate.test.js
+│   ├── require-auth.js       session valide exigée, sinon 401 ; range le membre dans req.user
+│   ├── login-rate-limit.js   au-delà de 10 échecs de connexion par e-mail en 15 min : 429
 │   ├── not-found.js          route inconnue sous /api (404)
 │   ├── error-handler.js      gestion d'erreurs centrale, branchée en dernier
 │   └── error-handler.test.js
 ├── errors/
 │   └── http-error.js         erreur prévue, qui porte son code HTTP
 ├── config/
-│   └── zod.js                Zod réglé en français ; tout schéma importe z d'ici
+│   ├── zod.js                Zod réglé en français ; tout schéma importe z d'ici
+│   └── session.js            durée de la session, nom et options du cookie
 ├── controllers/
-│   └── health-controller.js
+│   ├── health-controller.js
+│   └── auth-controller.js    pose et efface le cookie de session
 ├── services/
 │   ├── health-service.js
-│   └── health-service.test.js   test du service seul, sans serveur
+│   ├── health-service.test.js   test du service seul, sans serveur
+│   ├── auth-service.js       règles des comptes, jeton de session et son empreinte
+│   ├── password-hashing.js   hachage Argon2id des mots de passe
+│   └── password-hashing.test.js
 ├── repositories/
 │   ├── users-repository.js   comptes : créer, chercher par e-mail (SQL paramétré)
-│   └── users-repository.test.js   dont la preuve contre l'injection SQL
+│   ├── users-repository.test.js   dont la preuve contre l'injection SQL
+│   ├── sessions-repository.js   sessions : créer, retrouver le membre, supprimer
+│   └── sessions-repository.test.js
 ├── db/
 │   ├── pool.js               connexion à PostgreSQL (réserve de connexions, TLS vérifié)
 │   ├── pool.test.js
 │   ├── migrate.js            applique les migrations dans l'ordre (npm run db:migrate)
 │   ├── migrations/
-│   │   └── 001_initial_schema.sql   les 9 tables, contraintes, index, déclencheur, RLS
+│   │   ├── 001_initial_schema.sql   les 9 tables, contraintes, index, déclencheur, RLS
+│   │   └── 002_sessions.sql      la table des sessions de connexion (ELS-17)
 │   ├── postgres-error-codes.js   noms des codes d'erreur de PostgreSQL (23505…)
-│   ├── schema.test.js        les tables et les contraintes du modèle
+│   ├── schema.test.js        les 10 tables et les contraintes du modèle
 │   └── start-database-for-tests.js  schéma jetable pour chaque fichier de test
 ├── app.test.js               l'application assemblée : santé, 404, 400, 413, 415
-└── start-app-for-tests.js    outils des tests (port libre, envoi de JSON)
+└── start-app-for-tests.js    outils des tests (port libre, envoi de JSON et de cookies)
 ```
 
 Chaque ressource (santé, stations, moments…) a un fichier dans chaque couche, nommé `<ressource>-<couche>.js`, en kebab-case comme le veut `CONTRIBUTING.md`.
 
 ### Accès aux données et base
 
-La couche d'accès aux données est la seule à écrire du SQL. Chaque fonction reçoit en premier le pool de connexions (`db`) : le service lui passera celui de l'application, un test celui de sa base jetable.
+La couche d'accès aux données est la seule à écrire du SQL. Chaque fonction reçoit en premier le pool de connexions (`db`). `server.js` crée le pool et le passe à `createApp({ db })`, qui le range dans `app.locals` ; un contrôleur le lit dans `req.app.locals.db` et le passe au service, qui le passe à l'accès aux données. Un test fabrique son application avec le pool de sa base jetable.
 
 ```js
 export async function findUserByEmail(db, email) {
@@ -261,13 +275,49 @@ flowchart LR
 | Données invalides (`validate`) | 400 | Requête invalide, avec les champs fautifs |
 | Corps JSON mal formé | 400 | JSON mal formé |
 | Corps trop gros ou mal encodé | 413, 415 | Requête refusée |
-| Erreur prévue d'un service (`HttpError`) | son code | son message |
+| Pas de session valide (`requireAuth`) | 401 | Connexion requise |
+| Trop d'échecs de connexion (`login-rate-limit`) | 429 | Trop de tentatives de connexion… |
+| Erreur prévue d'un service (`HttpError`) : identifiants faux, e-mail déjà inscrit… | son code (401, 409…) | son message |
 | Route inconnue sous `/api` | 404 | Ressource introuvable |
 | Erreur imprévue, y compris un code 4xx posé par une autre bibliothèque | 500 | Erreur interne du serveur |
 
 **Une erreur imprévue ne laisse rien fuiter.** Son détail (message technique, pile d'appels, adresse de la base) part seulement dans les journaux du serveur : le client ne reçoit que le message générique, qui ne donne aucune prise à un attaquant. Une `HttpError` 5xx lancée par un service est montrée telle quelle, mais aussi journalisée.
 
-**Limites connues.** Hors de `/api`, Express répond encore avec sa page HTML par défaut : l'interface est servie à part, par le site statique de Render (ELS-15). Si une réponse a déjà commencé à partir quand une erreur survient, on ne peut plus la changer : Express coupe la connexion.
+**Limites connues.** Le compteur des échecs de connexion vit dans la mémoire du serveur : il repart à zéro au redémarrage. L'inscription n'est pas encore limitée en nombre (à revoir avec ELS-42). Hors de `/api`, Express répond encore avec sa page HTML par défaut : l'interface est servie à part, par le site statique de Render (ELS-15). Si une réponse a déjà commencé à partir quand une erreur survient, on ne peut plus la changer : Express coupe la connexion.
+
+### Authentification et sessions
+
+Les comptes (F4) et la déconnexion (C1) sont codés dans l'API. Les choix sont expliqués dans l'[ADR-0004](adr/0004-sessions-en-base-et-cookie.md).
+
+| Route | Middlewares | Réponse |
+| --- | --- | --- |
+| `POST /api/auth/register` `{ email, password, consent }` | `validate` | 201 `{ user }` + cookie ; 409 si l'e-mail a déjà un compte |
+| `POST /api/auth/login` `{ email, password }` | `validate`, limite des essais | 200 `{ user }` + nouveau cookie ; 401 ; 429 après 10 échecs |
+| `POST /api/auth/logout` | | 204, session supprimée en base, cookie effacé |
+| `GET /api/auth/me` | `requireAuth` | 200 `{ user }` ; 401 |
+
+```mermaid
+sequenceDiagram
+    participant N as Navigateur
+    participant A as API
+    participant B as PostgreSQL
+    N->>A: POST /api/auth/login { email, password }
+    A->>B: compte de cet e-mail ?
+    B-->>A: compte + hash Argon2id
+    A->>A: vérifie le mot de passe, tire un jeton aléatoire
+    A->>B: INSERT session (empreinte SHA-256 du jeton, expiration à 30 jours)
+    A-->>N: 200 { user } + Set-Cookie elsewhere_session=jeton (HttpOnly, Secure, SameSite=Lax)
+    N->>A: GET /api/auth/me + Cookie
+    A->>B: session de cette empreinte, pas expirée ?
+    B-->>A: membre
+    A-->>N: 200 { user }
+```
+
+- **Le mot de passe n'est jamais stocké**, seulement son hash Argon2id. **Le jeton de session non plus**, seulement son empreinte : une copie volée de la base ne permet de se connecter à aucun compte.
+- **Le cookie est hors de portée du JavaScript** (`HttpOnly`), envoyé seulement en HTTPS (`Secure`), et pas quand un autre site déclenche une requête (`SameSite=Lax`, contre le CSRF).
+- **La déconnexion supprime la session en base** : un cookie copié ne sert plus à rien (C1).
+- **La connexion ne révèle pas qui est inscrit** : e-mail inconnu et mauvais mot de passe reçoivent la même réponse 401, en un temps comparable.
+- **Une route protégée** branche `requireAuth` avant son contrôleur et lit le membre dans `req.user`. Les droits (« ce moment est-il à toi ? ») restent vérifiés dans le service.
 
 ### Exemple réel : la route de santé
 
@@ -345,7 +395,6 @@ sequenceDiagram
 
 **À préciser plus tard :**
 
-- Le fonctionnement exact de la session (cookie, durée) sera décidé avec l'authentification (ELS-17).
 - Où le navigateur garde le moment en attente pendant l'inscription (mémoire de la page ou stockage local) sera décidé avec la story F5.
 
 ## Tenir ce document à jour

@@ -1,5 +1,5 @@
 // Rôle : vérifie le schéma créé par les migrations (src/db/migrations/) :
-// les 9 tables existent, une migration n'est jamais appliquée deux fois, et
+// les 10 tables existent, une migration n'est jamais appliquée deux fois, et
 // la base refuse elle-même les données qui violent les règles du modèle.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -41,7 +41,7 @@ function insertMoment(db, { userId, stationId, trackTitle = null, themeId = null
   );
 }
 
-test('les migrations créent les 9 tables du modèle', requiresDatabase, async (t) => {
+test('les migrations créent les 10 tables du modèle', requiresDatabase, async (t) => {
   const db = await startTestDatabase(t);
 
   const { rows } = await db.query(
@@ -53,7 +53,7 @@ test('les migrations créent les 9 tables du modèle', requiresDatabase, async (
   assert.deepEqual(
     rows.map((row) => row.table_name),
     ['list_stations', 'lists', 'moments', 'places', 'reports',
-      'station_themes', 'stations', 'themes', 'users'],
+      'sessions', 'station_themes', 'stations', 'themes', 'users'],
   );
 });
 

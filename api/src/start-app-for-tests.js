@@ -26,3 +26,26 @@ export async function postJson(url, rawBody, contentType = 'application/json') {
   });
   return { status: response.status, json: await response.json() };
 }
+
+// Envoie une requête à l'API comme le ferait le navigateur, cookie compris.
+// Reçoit l'adresse complète et, au besoin, { method, body, cookie } : body
+// est un objet converti en JSON, cookie le texte « nom=valeur » à renvoyer.
+// Renvoie le code HTTP, le corps lu en JSON (null s'il est vide, comme pour
+// un 204) et les en-têtes Set-Cookie posés par la réponse.
+export async function sendRequest(url, { method = 'GET', body, cookie } = {}) {
+  const headers = {};
+  if (body !== undefined) headers['Content-Type'] = 'application/json';
+  if (cookie) headers.Cookie = cookie;
+
+  const response = await fetch(url, {
+    method,
+    headers,
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  const text = await response.text();
+  return {
+    status: response.status,
+    json: text ? JSON.parse(text) : null,
+    setCookies: response.headers.getSetCookie(),
+  };
+}
