@@ -1,6 +1,6 @@
 # Architecture d'Elsewhere
 
-État au 28 novembre 2026 (ELS-22, ELS-21 et ELS-18). Ce document décrit Elsewhere en quatre vues, du métier à l'infrastructure, puis détaille les couches de l'API et le déroulé de deux requêtes. Il complète la section 7 du PRD (`docs/prd.md`) et **il est mis à jour dans chaque pull request qui change l'architecture** (voir la dernière section).
+État au 28 novembre 2026 (ELS-22, ELS-21, ELS-18 et ELS-23). Ce document décrit Elsewhere en quatre vues, du métier à l'infrastructure, puis détaille les couches de l'API et le déroulé de deux requêtes. Il complète la section 7 du PRD (`docs/prd.md`) et **il est mis à jour dans chaque pull request qui change l'architecture** (voir la dernière section).
 
 ## Pourquoi ce document
 
@@ -53,7 +53,7 @@ Les fonctions de l'application, regroupées par grand domaine (les « quartiers 
 | Thèmes (F2) | Titre en cours : jamais de faux titre | Listes personnalisées (F8) | Consentement à l'inscription (C2) | Masquer / réactiver (F10) |
 | | Signaler une station en panne (C8) | Raccourcis (F11) | Export et suppression (F7) | Rôles vérifiés par l'API |
 
-Le compte, la connexion (F4), la déconnexion de C1 et le consentement à l'inscription (C2) sont codés : l'API avec ELS-17, les écrans avec ELS-21 et ELS-18. Le remplissage du cache des stations (F9) est codé sous forme d'une commande lancée à la main (ELS-22) ; la tâche de chaque nuit viendra avec ELS-37. Les autres fonctions sont décidées, pas encore codées.
+Le compte, la connexion (F4), la déconnexion de C1 et le consentement à l'inscription (C2) sont codés : l'API avec ELS-17, les écrans avec ELS-21 et ELS-18. Le remplissage du cache des stations (F9) est codé sous forme d'une commande lancée à la main (ELS-22) ; la tâche de chaque nuit viendra avec ELS-37. Les lieux avec leur heure locale et le tableau du direct (F1) sont codés (ELS-23) ; le tableau montre « titre indisponible » tant que le relevé du titre (bloc A6) n'est pas codé. Les autres fonctions sont décidées, pas encore codées.
 
 ## 3. Vue applicative : composants et flux
 
@@ -64,8 +64,9 @@ flowchart LR
     subgraph NAV["Navigateur : React + Vite"]
         direction TB
         N0["Socle : navigation (React Router),<br/>mise en page, appel à l'API,<br/>état « qui est connecté » (ELS-21)"]:::code
-        N1["Écrans codés : accueil, inscription<br/>avec consentement, connexion, compte"]:::code
-        N2["Écrans : lieux, direct, thèmes, lecteur,<br/>passeport (maquettes ELS-7)"]:::decide
+        N1["Écrans codés : inscription<br/>avec consentement, connexion, compte"]:::code
+        N1b["Écrans codés : lieux avec heure locale,<br/>tableau du direct (ELS-23)"]:::code
+        N2["Écrans : thèmes, lecteur,<br/>passeport (maquettes ELS-7)"]:::decide
         N3["Lecteur audio : lit le flux<br/>de la station, sans relais"]:::decide
     end
 
@@ -75,12 +76,14 @@ flowchart LR
         A2["Contrôleurs"]:::code
         A3["Services (logique métier) : titres,<br/>moments, listes, admin<br/>+ droits d'accès"]:::decide
         A3b["Service des comptes : inscription,<br/>connexion, déconnexion (ELS-17)"]:::code
+        A3d["Service des lieux : titre montré<br/>s'il a moins de 5 min (freshTitle),<br/>sinon null (ELS-23)"]:::code
         A3c["Service d'importation des stations :<br/>HTTPS seulement, hors ligne et doublons<br/>écartés, rattachement au lieu (ELS-22)"]:::code
         A4["Accès aux données : SQL paramétré<br/>(comptes, sessions, lieux, stations)"]:::code
         A4b["Client Radio Browser : serveurs par DNS,<br/>délai maximal (ELS-22)"]:::code
         A10["Commande npm run stations:import<br/>(ELS-22)"]:::code
         A1 --> A2 --> A3 --> A4
         A2 --> A3b --> A4
+        A2 --> A3d --> A4
         A10 --> A3c --> A4
         A3c --> A4b
         A5["Middleware de session requireAuth :<br/>qui es-tu ? (401) ; essais limités (429)"]:::code
@@ -163,7 +166,9 @@ flowchart LR
 
 | Adresse | Écran | Maquette |
 | --- | --- | --- |
-| `/` | Accueil (en-tête des lieux) | 01 |
+| `/` | Mène aux lieux (redirection) | |
+| `/lieux` | Lieux en direct : pays, heure locale mise à jour chaque minute, nombre de radios (F1) | 01 |
+| `/lieux/:id` | Tableau du direct d'un lieu : chaque station avec son titre, ou « Titre indisponible » ; lieu introuvable (F1) | 02 |
 | `/inscription` | Créer un compte, avec la case de consentement non cochée (C2) | 08 |
 | `/connexion` | Se connecter | 09 |
 | `/compte` | Mon compte : e-mail, date du consentement, déconnexion | 12 (partie) |
@@ -171,6 +176,9 @@ flowchart LR
 
 - **Qui est connecté** : au chargement, `AuthProvider` appelle `GET /api/auth/me` (200 : le membre ; 401 : personne). Le cookie de session est `HttpOnly` : seule l'API sait s'il est valide. Les écrans de compte affichent « Chargement… » jusqu'à la réponse, puis redirigent si besoin. Une réponse de `/me` arrivée après une connexion ou une inscription réussie est ignorée. L'onglet « Compte » mène au compte ou à la connexion selon la réponse.
 - **Les erreurs de l'API** sont placées par `forms/form-errors.js` : un champ fautif (400, ou 409 pour l'e-mail déjà inscrit) a son message sous le champ, relié par `aria-describedby`, et reçoit le focus ; les autres (401, 429, 500, réseau coupé) s'affichent en tête du formulaire, dans une zone `role="alert"` lue par les lecteurs d'écran. Les erreurs sont vidées à chaque envoi (une erreur identique est ainsi annoncée de nouveau), et celle d'un champ disparaît dès qu'on le modifie.
+- **Les écrans qui lisent l'API** (lieux, tableau du direct) passent par le crochet `useApiData` : « Chargement… » annoncé (`role="status"`), puis l'erreur avec un bouton « Réessayer », ou les données. Une réponse qui arrive après un changement de lieu est ignorée. Un lieu inconnu (404) ou une adresse mal formée (400) affiche « Lieu introuvable ».
+- **L'heure locale** est calculée par le navigateur avec `Intl.DateTimeFormat` et le fuseau IANA du lieu ; elle avance au début de chaque minute, sans rappeler l'API ([ADR-0007](adr/0007-lieux-et-tableau-du-direct.md)).
+- **Toucher une station ne joue rien** pour l'instant : le lecteur arrive avec ELS-25. La ligne de station (`StationRow`) n'a donc pas de bouton de lecture.
 - **Le consentement** est vérifié deux fois : l'écran bloque l'envoi tant que la case n'est pas cochée, et l'API exige `consent: true` et enregistre la date, prise sur le serveur. Son texte dit seulement ce qui est gardé (l'e-mail, la date de l'accord, puis les moments et les listes) ; il parlera de l'export et de la suppression quand ELS-40 les aura codés.
 
 ```text
@@ -182,7 +190,10 @@ web/src/
 │   ├── api-client.js         le seul appel à fetch : /api, JSON, cookie, ApiError
 │   ├── api-client.test.js
 │   ├── auth-api.js           inscription, connexion, déconnexion, qui est connecté
-│   └── auth-api.test.js
+│   ├── auth-api.test.js
+│   ├── places-api.js         lieux et tableau du direct (ELS-23)
+│   ├── places-api.test.js
+│   └── use-api-data.js       crochet : chargement, erreur avec nouvel essai, données
 ├── auth/
 │   ├── auth-context.js       le contexte et le crochet useAuth()
 │   ├── AuthProvider.jsx      demande /api/auth/me au chargement, garde le membre
@@ -191,6 +202,10 @@ web/src/
 │   ├── Layout.jsx            mise en page commune : écran + barre d'onglets
 │   ├── Layout.test.jsx       onglets selon qui est connecté, page introuvable
 │   ├── TabBar.jsx            onglets Lieux et Compte
+│   ├── StationRow.jsx        ligne de station : nom, titre ou « Titre indisponible », lieu s'il est fourni
+│   ├── StationRow.test.jsx
+│   ├── LoadError.jsx         erreur de chargement et bouton « Réessayer »
+│   ├── place-summary.js      « 21 h 58 · 7 radios en direct »
 │   ├── BackLink.jsx          « ← Retour »
 │   ├── TextField.jsx         champ accessible : étiquette, aide, erreur
 │   ├── FormAlert.jsx         erreur en tête de formulaire (role="alert")
@@ -199,7 +214,10 @@ web/src/
 │   ├── form-errors.js        place une erreur de l'API sous son champ ou en tête ; focus sur le premier fautif
 │   └── use-form-errors.js    état des erreurs d'un formulaire : vider, afficher, retirer celle d'un champ modifié
 ├── pages/
-│   ├── HomePage.jsx
+│   ├── PlacesPage.jsx        lieux en direct, heure locale (ELS-23)
+│   ├── PlacesPage.test.jsx
+│   ├── PlaceBoardPage.jsx    tableau du direct d'un lieu (ELS-23)
+│   ├── PlaceBoardPage.test.jsx
 │   ├── RegisterPage.jsx      inscription et consentement (ELS-18)
 │   ├── RegisterPage.test.jsx
 │   ├── LoginPage.jsx
@@ -207,6 +225,10 @@ web/src/
 │   ├── AccountPage.jsx       e-mail, date du consentement, déconnexion
 │   ├── AccountPage.test.jsx
 │   └── NotFoundPage.jsx
+├── time/
+│   ├── local-time.js         heure d'un fuseau IANA, « 21 h 58 »
+│   ├── local-time.test.js
+│   └── use-current-minute.js crochet : l'instant présent, renouvelé chaque minute
 ├── test-setup.js             préparation de Vitest (jsdom, nettoyage)
 └── test-utils.jsx            outils des tests : fausse API, application en mémoire
 ```
@@ -239,7 +261,9 @@ api/src/
 │   ├── index.js              rassemble les routes de chaque ressource
 │   ├── health-routes.js
 │   ├── auth-routes.js        /api/auth : inscription, connexion, déconnexion, me
-│   └── auth-routes.test.js   les comptes de bout en bout, dont les tests de sécurité
+│   ├── auth-routes.test.js   les comptes de bout en bout, dont les tests de sécurité
+│   ├── places-routes.js      /api/places : lieux et tableau du direct, publics (ELS-23)
+│   └── places-routes.test.js titre récent ou null, station masquée absente, 404, 400
 ├── middlewares/
 │   ├── validate.js           vérifie params, query et body avec un schéma Zod (400)
 │   ├── validate.test.js
@@ -257,7 +281,8 @@ api/src/
 │   └── starting-places.test.js
 ├── controllers/
 │   ├── health-controller.js
-│   └── auth-controller.js    pose et efface le cookie de session
+│   ├── auth-controller.js    pose et efface le cookie de session
+│   └── places-controller.js  lieux et tableau du direct
 ├── services/
 │   ├── health-service.js
 │   ├── health-service.test.js   test du service seul, sans serveur
@@ -268,6 +293,10 @@ api/src/
 │   ├── limit-concurrency.test.js
 │   ├── station-selection.js  règles du tri des stations : lieu, hors ligne, HTTPS, doublons
 │   ├── station-selection.test.js   sur des stations simulées, sans base ni réseau
+│   ├── fresh-title.js        règle « jamais de faux titre » : titre de moins de 5 min, sinon null
+│   ├── fresh-title.test.js
+│   ├── places-service.js     lieux, et tableau du direct filtré par freshTitle (ELS-23)
+│   ├── places-service.test.js   repositories simulés : titre récent, vieux titre, lieu inconnu
 │   ├── stations-import-service.js   annuaire → tri → base, en une transaction
 │   └── stations-import-service.test.js   annuaire simulé : en erreur, trop lent, 2e importation
 ├── clients/
@@ -281,9 +310,9 @@ api/src/
 │   ├── users-repository.test.js   dont la preuve contre l'injection SQL
 │   ├── sessions-repository.js   sessions : créer, retrouver le membre, supprimer
 │   ├── sessions-repository.test.js
-│   ├── places-repository.js  lieux : créer ou mettre à jour (ON CONFLICT)
+│   ├── places-repository.js  lieux : créer ou mettre à jour (ON CONFLICT), lister ceux qui ont des stations actives, lire un lieu
 │   ├── places-repository.test.js
-│   ├── stations-repository.js   stations : insérer ou mettre à jour sans doublon (ON CONFLICT)
+│   ├── stations-repository.js   stations : insérer ou mettre à jour sans doublon (ON CONFLICT), lire les actives d'un lieu
 │   └── stations-repository.test.js
 ├── db/
 │   ├── pool.js               connexion à PostgreSQL (réserve de connexions, TLS vérifié)
@@ -453,6 +482,41 @@ sequenceDiagram
 - **Pas de doublon** : à l'intérieur d'une importation (même identifiant, même flux, même nom dans un lieu), et d'une importation à l'autre (`ON CONFLICT (external_id)`).
 - **Une station masquée par un admin le reste** : l'importation ne touche jamais au statut.
 - **Limites connues** : une station qui disparaît de l'annuaire reste dans le cache jusqu'à la synchro de chaque nuit (ELS-37). Le repli sur le nom peut rattacher par erreur une station sans région dont le nom cite une ville où elle n'émet pas ; elle reste dans le bon pays.
+
+### Lieux et tableau du direct (ELS-23)
+
+Les deux routes des lieux sont **publiques** : pas de `requireAuth`, on écoute sans compte (F1). Les choix sont expliqués dans l'[ADR-0007](adr/0007-lieux-et-tableau-du-direct.md).
+
+| Route | Middlewares | Réponse |
+| --- | --- | --- |
+| `GET /api/places` | | 200 `{ places: [{ id, name, countryCode, countryName, timezone, stationCount }] }` : les lieux qui ont au moins une station active, triés par nom |
+| `GET /api/places/:id/stations` | `validate` (id entier positif) | 200 `{ place, stations: [{ id, name, streamUrl, homepageUrl, title }] }` ; 404 lieu introuvable ; 400 identifiant invalide |
+
+```mermaid
+sequenceDiagram
+    participant N as Navigateur
+    participant C as Contrôleur lieux
+    participant S as Service lieux
+    participant D as Repositories lieux et stations
+    participant B as PostgreSQL
+    N->>C: GET /api/places/1/stations (id validé par Zod)
+    C->>S: getPlaceBoard(db, 1)
+    S->>D: findPlaceById(1)
+    D->>B: SELECT … FROM places WHERE id = $1
+    alt lieu inconnu
+        S-->>N: 404 Lieu introuvable
+    else lieu trouvé
+        S->>D: findActiveStationsByPlace(1)
+        D->>B: SELECT … FROM stations WHERE place_id = $1 AND status = 'active'
+        B-->>S: stations avec last_title et last_title_read_at
+        S->>S: title = freshTitle(last_title, last_title_read_at) : le titre, ou null
+        S-->>N: 200 { place, stations }
+    end
+```
+
+- **Une station masquée n'est jamais renvoyée**, et elle ne compte pas dans `stationCount`. Un lieu sans station active n'apparaît pas dans la liste.
+- **La règle des 5 minutes n'existe qu'une fois**, dans `services/fresh-title.js`, partagée avec les moments (ELS-19). Le titre brut et son heure de lecture ne quittent jamais l'API : seul `title` part au client.
+- **Personne n'écrit encore `last_title`** : le relevé du titre (bloc A6) n'a pas de ticket. Le tableau montre donc « titre indisponible » partout, et les tests prouvent qu'un titre récent serait affiché.
 
 ### Exemple réel : la route de santé
 

@@ -9,6 +9,8 @@ Le vocabulaire du projet. Les termes sont en français ; la colonne « Dans le c
 | Annuaire | `radio-browser-client` | Radio Browser, la base publique de stations d'où Elsewhere recopie les siennes. Seule l'API lui parle, jamais le navigateur. |
 | Importation des stations | `importStations`, `npm run stations:import` | Recopie des stations de l'annuaire dans le cache, pour une liste de lieux. Elle ne garde que les flux en HTTPS, en ligne, sans doublon, rattachés à un lieu, et dit combien elle en a écarté et pourquoi. |
 | Alias d'un lieu | `stateAliases` | Textes qui rattachent une station à un lieu (Lisboa, Lisbon pour Lisbonne), sans tenir compte des majuscules ni des accents : cherchés dans le champ libre « state » de l'annuaire, ou dans le nom de la station si ce champ est vide (« la région d'abord, sinon le nom »). |
+| Tableau du direct | `getPlaceBoard`, `/lieux/:id` | Écran d'un lieu qui montre chacune de ses stations actives avec son titre en cours, ou « titre indisponible ». Ouvert sans compte. |
+| Heure locale | `formatLocalTime` | Heure qu'il est dans un lieu, calculée par le navigateur à partir du fuseau du lieu, et mise à jour chaque minute. |
 | Flux | `stream` | Le son en direct d'une station, lu par le navigateur sans passer par l'API. |
 | Titre en cours | `last_title` (station) | Dernier artiste et morceau lus dans les métadonnées du flux d'une station, gardés seulement s'ils sont classés lisibles, avec l'heure de cette lecture (`last_title_read_at`). Affiché s'il a moins de 5 minutes, sinon « titre indisponible ». Jamais inventé. |
 | Titre gardé | `track_title` (moment) | Copie du titre en cours au moment où le membre garde un moment. Vide si le titre était indisponible : on ne le complète jamais après coup. |
