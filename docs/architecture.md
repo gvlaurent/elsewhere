@@ -187,8 +187,10 @@ api/src/
 │   ├── health-service.js
 │   ├── health-service.test.js   test du service seul, sans serveur
 │   ├── auth-service.js       règles des comptes, jeton de session et son empreinte
-│   ├── password-hashing.js   hachage Argon2id des mots de passe
-│   └── password-hashing.test.js
+│   ├── password-hashing.js   hachage Argon2id des mots de passe, 4 calculs à la fois au plus
+│   ├── password-hashing.test.js
+│   ├── limit-concurrency.js  file d'attente : au plus N tâches asynchrones en même temps
+│   └── limit-concurrency.test.js
 ├── repositories/
 │   ├── users-repository.js   comptes : créer, chercher par e-mail (SQL paramétré)
 │   ├── users-repository.test.js   dont la preuve contre l'injection SQL

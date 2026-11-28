@@ -22,22 +22,18 @@ import {
 // réponse ne doit pas révéler quels e-mails ont un compte.
 const INVALID_CREDENTIALS = 'E-mail ou mot de passe incorrect';
 
-// Hash d'un mot de passe que personne n'a, calculé une seule fois au premier
-// besoin. Il sert quand l'e-mail est inconnu : on vérifie quand même un
+// Hash d'un mot de passe que personne n'a, lancé dès le chargement du
+// module. Il sert quand l'e-mail est inconnu : on vérifie quand même un
 // mot de passe, pour que la réponse prenne le même temps que pour un vrai
 // compte. Sinon, un attaquant devinerait les e-mails inscrits au chronomètre.
-let decoyHashPromise;
-function getDecoyHash() {
-  decoyHashPromise ??= hashPassword(randomBytes(32).toString('hex'));
-  return decoyHashPromise;
-}
+const decoyHashPromise = hashPassword(randomBytes(32).toString('hex'));
 
 // Inscrit un nouveau membre et le connecte aussitôt. Reçoit le pool et
 // { email, password } déjà validés (le consentement a été vérifié par le
 // schéma de la route). Renvoie { user, token } : le compte, sans son hash,
 // et le jeton de session à poser dans le cookie. Lève une HttpError 409 si
 // l'e-mail a déjà un compte.
-export async function registerMember(db, { email, password }) {
+export async function registerUser(db, { email, password }) {
   const passwordHash = await hashPassword(password);
   let user;
   try {
@@ -57,11 +53,11 @@ export async function registerMember(db, { email, password }) {
 }
 
 // Connecte un membre. Reçoit le pool et { email, password }. Renvoie
-// { user, token } comme registerMember. Lève une HttpError 401, avec le même
+// { user, token } comme registerUser. Lève une HttpError 401, avec le même
 // message, si l'e-mail est inconnu ou si le mot de passe est faux.
 export async function logIn(db, { email, password }) {
   const found = await findUserByEmail(db, email);
-  const isValid = await verifyPassword(found?.passwordHash ?? (await getDecoyHash()), password);
+  const isValid = await verifyPassword(found?.passwordHash ?? (await decoyHashPromise), password);
   if (!found || !isValid) {
     throw new HttpError(401, INVALID_CREDENTIALS);
   }
@@ -86,7 +82,7 @@ export async function logOut(db, token) {
 // Retrouve le membre d'un jeton de session. Reçoit le pool et le jeton lu
 // dans le cookie. Renvoie le compte, ou null si le jeton est absent,
 // inventé ou expiré.
-export async function findMemberBySessionToken(db, token) {
+export async function findUserBySessionToken(db, token) {
   if (!token) return null;
   return findUserBySessionTokenHash(db, fingerprintOf(token));
 }

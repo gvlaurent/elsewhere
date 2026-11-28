@@ -7,14 +7,14 @@ import {
   SESSION_COOKIE_OPTIONS,
   SESSION_DURATION_MS,
 } from '../config/session.js';
-import { logIn, logOut, registerMember } from '../services/auth-service.js';
+import { logIn, logOut, registerUser } from '../services/auth-service.js';
 
 // POST /api/auth/register. Inscrit le membre, pose son cookie de session et
 // répond 201 avec { user }. Un e-mail déjà inscrit part en 409 (levé par le
 // service, traduit par la gestion d'erreurs centrale).
 export async function register(req, res) {
   const { email, password } = req.validated.body;
-  const { user, token } = await registerMember(req.app.locals.db, { email, password });
+  const { user, token } = await registerUser(req.app.locals.db, { email, password });
   setSessionCookie(res, token);
   res.status(201).json({ user });
 }

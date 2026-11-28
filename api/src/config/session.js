@@ -13,8 +13,9 @@ export const SESSION_COOKIE = 'elsewhere_session';
 // doivent recevoir les mêmes pour viser le même cookie). Sécurité :
 // - httpOnly : le JavaScript de la page ne peut pas lire le cookie ; un
 //   script injecté (faille XSS) ne peut donc pas voler la session ;
-// - secure : le navigateur ne l'envoie qu'en HTTPS (et sur localhost,
-//   que les navigateurs traitent comme sûr en développement) ;
+// - secure : le navigateur ne l'envoie qu'en HTTPS. En développement sur
+//   http://localhost, Chrome et Firefox l'acceptent quand même ; Safari le
+//   refuse : tester la connexion en local avec Chrome ou Firefox ;
 // - sameSite 'lax' : il n'est pas envoyé quand un autre site déclenche
 //   un POST vers Elsewhere, ce qui bloque la falsification de requête
 //   (CSRF) ;

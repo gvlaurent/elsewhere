@@ -15,7 +15,8 @@ export async function startApp(t, app) {
 }
 
 // Envoie un POST avec un corps JSON déjà écrit en texte (pour pouvoir
-// envoyer aussi du JSON mal formé). Reçoit l'adresse complète, le texte du
+// envoyer aussi du JSON mal formé ou un Content-Type piégé, ce que
+// sendRequest, plus bas, ne permet pas exprès). Reçoit l'adresse complète, le texte du
 // corps et, au besoin, un autre Content-Type. Renvoie le code HTTP et le
 // corps de la réponse lu en JSON.
 export async function postJson(url, rawBody, contentType = 'application/json') {

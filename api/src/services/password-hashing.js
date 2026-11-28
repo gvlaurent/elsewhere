@@ -8,6 +8,7 @@
 // son propre sel aléatoire et ses réglages ($argon2id$v=19$m=19456,t=2,p=1$…),
 // ce qui permettra de les renforcer plus tard sans casser les anciens.
 import argon2 from 'argon2';
+import { limitConcurrency } from './limit-concurrency.js';
 
 // Réglages minimaux de l'OWASP pour Argon2id : 19 Mio de mémoire,
 // 2 passes, 1 fil. Plus légers que ceux par défaut de la bibliothèque
@@ -19,17 +20,22 @@ const ARGON2_OPTIONS = {
   parallelism: 1,
 };
 
+// Au plus 4 calculs Argon2 en même temps, soit environ 76 Mio : une rafale
+// d'inscriptions ou de connexions fait la queue au lieu de remplir la
+// mémoire du serveur et de le faire tomber (déni de service).
+const runLimited = limitConcurrency(4);
+
 // Calcule le hash d'un mot de passe. Reçoit le mot de passe en clair ;
 // renvoie (promesse) le hash complet, prêt à stocker dans users.password_hash.
 // Asynchrone : le calcul prend quelques dizaines de millisecondes et tourne
 // hors du fil principal de Node, qui continue à servir les autres requêtes.
 export function hashPassword(password) {
-  return argon2.hash(password, ARGON2_OPTIONS);
+  return runLimited(() => argon2.hash(password, ARGON2_OPTIONS));
 }
 
 // Vérifie un mot de passe. Reçoit le hash stocké et le mot de passe proposé ;
 // renvoie (promesse) true s'ils correspondent, false sinon. La bibliothèque
 // relit le sel et les réglages dans le hash, puis compare en temps constant.
 export function verifyPassword(hash, password) {
-  return argon2.verify(hash, password);
+  return runLimited(() => argon2.verify(hash, password));
 }

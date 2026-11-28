@@ -41,5 +41,8 @@ déconnexion
 - Chaque requête protégée lit une ligne en base (index unique sur `token_hash`) : un coût négligeable à l'échelle d'Elsewhere.
 - Un membre peut être connecté sur plusieurs appareils : une session par appareil. Les sessions expirées d'un membre sont effacées à sa connexion suivante.
 - Le compteur d'échecs vit dans la mémoire du serveur : il repart à zéro au redémarrage et ne serait pas partagé entre plusieurs serveurs. Il suffit tant qu'une seule instance tourne. Quelqu'un peut aussi bloquer un compte 15 minutes en le visant exprès.
-- L'inscription n'est pas encore limitée en nombre ; à revoir avec les en-têtes de sécurité (ELS-42).
+- **Au plus 4 calculs Argon2 en même temps** (environ 76 Mio) : une rafale d'inscriptions ou de connexions fait la queue au lieu de saturer la mémoire du serveur.
+- **Limite par adresse IP renvoyée à ELS-42.** Ni l'inscription ni les essais d'un même mot de passe sur beaucoup de comptes ne sont encore limités par visiteur. Il faut d'abord vérifier quelle adresse les relais de Render transmettent à l'API (en-tête `X-Forwarded-For`), sinon tous les visiteurs partageraient le même compteur.
+- **L'inscription révèle qu'un e-mail a déjà un compte** (409). C'est un compromis courant : la connexion, elle, ne le révèle pas, et un message vague à l'inscription perdrait le membre qui a oublié qu'il était inscrit.
+- **Safari refuse un cookie `Secure` sur `http://localhost`** : en développement, tester la connexion avec Chrome ou Firefox. En ligne, tout passe en HTTPS.
 - La réinitialisation du mot de passe (C1, ELS-39) ajoutera sa propre table de jetons, sur le même principe : jeton aléatoire, empreinte en base, usage unique.
