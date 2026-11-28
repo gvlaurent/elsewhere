@@ -3,7 +3,7 @@
 // à jour sans doublon, statut d'admin respecté, requêtes paramétrées.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { upsertStations } from './stations-repository.js';
+import { findStationWithPlace, upsertStations } from './stations-repository.js';
 import { upsertPlace } from './places-repository.js';
 import { startTestDatabase, requiresDatabase } from '../db/start-database-for-tests.js';
 
@@ -99,4 +99,37 @@ test('un nom qui ressemble à du SQL est enregistré tel quel (injection SQL)', 
 
   const { rows } = await db.query('SELECT name FROM stations');
   assert.deepEqual(rows, [{ name: tricky }]);
+});
+
+// --- findStationWithPlace (ELS-19, garder un moment) ---
+
+test('findStationWithPlace renvoie la station, son dernier titre et son lieu', requiresDatabase, async (t) => {
+  const { db, placeId } = await setup(t);
+  await upsertStations(db, placeId, [coolFm]);
+  const readAt = new Date('2026-11-28T20:29:00Z');
+  await db.query(
+    'UPDATE stations SET last_title = $1, last_title_read_at = $2, status = $3',
+    ['Fela Kuti - Zombie', readAt, 'hidden'],
+  );
+  const { rows: [{ id }] } = await db.query('SELECT id FROM stations');
+
+  const station = await findStationWithPlace(db, id);
+
+  assert.deepEqual(station, {
+    id,
+    name: 'Cool FM',
+    status: 'hidden',
+    lastTitle: 'Fela Kuti - Zombie',
+    lastTitleReadAt: readAt,
+    placeName: 'Lagos',
+    countryCode: 'NG',
+    countryName: 'Nigeria',
+    timezone: 'Africa/Lagos',
+  });
+});
+
+test('findStationWithPlace renvoie null pour une station inconnue', requiresDatabase, async (t) => {
+  const { db } = await setup(t);
+
+  assert.equal(await findStationWithPlace(db, 999_999), null);
 });

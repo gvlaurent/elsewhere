@@ -59,3 +59,26 @@ export async function upsertStations(db, placeId, stations) {
   const inserted = rows.filter((row) => row.inserted).length;
   return { inserted, updated: rows.length - inserted };
 }
+
+// --- Lecture d'une station pour garder un moment (ELS-19) ---
+
+// Cherche une station avec son lieu, pour garder un moment (F5). Reçoit db
+// et l'identifiant de la station. Renvoie { id, name, status, lastTitle,
+// lastTitleReadAt, placeName, countryCode, countryName, timezone }, ou null
+// si elle n'existe pas. Le statut est renvoyé tel quel : décider qu'une
+// station masquée ne peut pas être gardée est le travail du service.
+export async function findStationWithPlace(db, stationId) {
+  const { rows } = await db.query(
+    // Jointure : chaque station a exactement un lieu (place_id obligatoire),
+    // d'où un JOIN simple. Le fuseau du lieu sert à calculer l'heure locale.
+    `SELECT s.id, s.name, s.status,
+            s.last_title AS "lastTitle", s.last_title_read_at AS "lastTitleReadAt",
+            p.name AS "placeName", p.country_code AS "countryCode",
+            p.country_name AS "countryName", p.timezone
+     FROM stations s
+     JOIN places p ON p.id = s.place_id
+     WHERE s.id = $1`,
+    [stationId],
+  );
+  return rows[0] ?? null;
+}
