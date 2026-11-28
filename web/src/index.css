@@ -1,12 +1,266 @@
-/* Styles communs à toute l'interface d'Elsewhere, chargés une fois par main.jsx. */
+/* Styles communs à toute l'interface d'Elsewhere, chargés une fois par main.jsx.
+   Mobile d'abord : une colonne de la largeur d'un téléphone, centrée sur un
+   grand écran. Les couleurs sont les « couleurs nommées » des maquettes
+   (variables Figma Elsewhere) ; leurs contrastes sont dans docs/els-7-maquettes.md. */
 
 :root {
-  /* Suit le thème clair ou sombre choisi dans le système de l'utilisateur. */
-  color-scheme: light dark;
-  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
-  line-height: 1.5;
+  --primaire: #1d5fd1;
+  --primaire-clair: #e4edfb;
+  --texte: #1b2430;
+  --texte-secondaire: #55606e;
+  --surface: #ffffff;
+  --fond: #fcfaf6;
+  --erreur: #b3261e; /* rouge sur fond crème : contraste d'environ 6,3:1 */
+  --bordure: #55606e;
+
+  /* Les maquettes sont en thème clair : on ne suit pas le thème sombre du
+     système, pour garder les contrastes vérifiés. */
+  color-scheme: light;
+  font-family: Inter, system-ui, 'Segoe UI', Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 1.35;
+  color: var(--texte);
+  background: var(--fond);
+}
+
+* {
+  box-sizing: border-box;
 }
 
 body {
   margin: 0;
+}
+
+/* Focus visible au clavier, sur tout ce qui peut le recevoir (RGAA 10.7). */
+:focus-visible {
+  outline: 3px solid var(--primaire);
+  outline-offset: 2px;
+}
+
+/* Mise en page : l'écran, puis la barre d'onglets collée en bas. */
+.app-shell {
+  max-width: 430px;
+  min-height: 100vh;
+  margin: 0 auto;
+  background: var(--fond);
+}
+
+.screen {
+  padding: 52px 20px 112px; /* le bas laisse la place à la barre d'onglets */
+}
+
+.screen-header h1 {
+  margin: 0;
+  font-size: 32px;
+  line-height: 1.2;
+}
+
+.lead {
+  margin: 6px 0 0;
+  color: var(--texte-secondaire);
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px; /* zone tactile d'au moins 44 px */
+  margin-bottom: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--primaire);
+  font: inherit;
+  cursor: pointer;
+}
+
+/* Formulaires (maquettes 08 et 09). */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.field-label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+
+.field-input {
+  width: 100%;
+  min-height: 52px;
+  padding: 0 15px;
+  border: 1px solid var(--bordure);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--texte);
+  font: inherit;
+}
+
+.field-input[aria-invalid='true'] {
+  border: 2px solid var(--erreur);
+}
+
+.field-hint,
+.field-error {
+  margin: 6px 0 0;
+  font-size: 13px;
+}
+
+.field-hint {
+  color: var(--texte-secondaire);
+}
+
+/* L'erreur ne passe pas que par la couleur : elle est écrite (RGAA 3.1). */
+.field-error {
+  color: var(--erreur);
+  font-weight: 600;
+}
+
+.form-alert {
+  margin: 0;
+  padding: 12px 15px;
+  border-left: 4px solid var(--erreur);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--erreur);
+  font-weight: 600;
+}
+
+.consent-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  color: var(--texte-secondaire);
+  font-size: 15px;
+}
+
+.consent-row input {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  margin: 0;
+  accent-color: var(--primaire);
+}
+
+/* La case fait 24 px, mais son étiquette est cliquable aussi : la zone
+   tactile couvre toute la ligne, bien plus que 44 px. */
+.consent-row label {
+  cursor: pointer;
+}
+
+.consent-row input[aria-invalid='true'] {
+  outline: 2px solid var(--erreur);
+  outline-offset: 2px;
+}
+
+.button-primary {
+  min-height: 48px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--primaire);
+  color: #ffffff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.button-primary[aria-disabled='true'] {
+  opacity: 0.7;
+  cursor: progress;
+}
+
+.form-link {
+  margin: 0;
+  text-align: center;
+}
+
+a {
+  color: var(--primaire);
+  font-weight: 600;
+}
+
+.note {
+  display: flex;
+  gap: 8px;
+  margin: 16px 0 0;
+  color: var(--texte-secondaire);
+  font-size: 14px;
+}
+
+.note .icon {
+  flex: none;
+  margin-top: 2px;
+}
+
+/* Page du compte (maquette 12). */
+.section {
+  margin-top: 24px;
+}
+
+.section h2 {
+  margin: 0 0 10px;
+  font-size: 18px;
+}
+
+.section .note {
+  margin-top: 0;
+}
+
+.action-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 52px;
+  margin-top: 10px;
+  padding: 0 17px;
+  border: 1px solid #e3e1dc;
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--texte);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* Barre d'onglets (composant « Barre d'onglets » des maquettes). */
+.tab-bar {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  width: 100%;
+  max-width: 430px;
+  transform: translateX(-50%);
+  border-top: 1px solid #e3e1dc;
+  background: var(--fond);
+}
+
+.tab-bar ul {
+  display: flex;
+  justify-content: space-around;
+  margin: 0;
+  padding: 8px 0 24px;
+  list-style: none;
+}
+
+.tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 64px;
+  min-height: 44px;
+  color: var(--texte-secondaire);
+  font-size: 13px;
+  font-weight: 400;
+  text-decoration: none;
+}
+
+/* L'onglet actif est bleu et en gras : pas seulement une couleur. */
+.tab[aria-current='page'] {
+  color: var(--primaire);
+  font-weight: 600;
 }

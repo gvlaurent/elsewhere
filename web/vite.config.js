@@ -1,5 +1,6 @@
 // Rôle : configure Vite, l'outil qui sert l'interface pendant le développement
 // (npm run dev) et prépare la version finale dans dist/ (npm run build).
+// Configure aussi Vitest (npm test), qui lit ce même fichier.
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 
@@ -13,5 +14,10 @@ export default defineConfig({
     proxy: {
       '/api': 'http://localhost:3000',
     },
+  },
+  test: {
+    // jsdom imite un navigateur dans Node : document, formulaires, clavier.
+    environment: 'jsdom',
+    setupFiles: ['./src/test-setup.js'],
   },
 })
