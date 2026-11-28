@@ -1,6 +1,6 @@
 # Architecture d'Elsewhere
 
-État au 24 novembre 2026 (ELS-16). Ce document décrit Elsewhere en quatre vues, du métier à l'infrastructure, puis détaille les couches de l'API et le déroulé de deux requêtes. Il complète la section 7 du PRD (`docs/prd.md`) et **il est mis à jour dans chaque pull request qui change l'architecture** (voir la dernière section).
+État au 24 novembre 2026 (ELS-13). Ce document décrit Elsewhere en quatre vues, du métier à l'infrastructure, puis détaille les couches de l'API et le déroulé de deux requêtes. Il complète la section 7 du PRD (`docs/prd.md`) et **il est mis à jour dans chaque pull request qui change l'architecture** (voir la dernière section).
 
 ## Pourquoi ce document
 
@@ -73,7 +73,7 @@ flowchart LR
         A1["Routes · validation des entrées (400)"]:::code
         A2["Contrôleurs"]:::code
         A3["Services (logique métier) : stations,<br/>titres, comptes, moments, listes, admin<br/>+ droits d'accès"]:::decide
-        A4["Accès aux données : SQL paramétré"]:::decide
+        A4["Accès aux données : SQL paramétré<br/>(comptes, ELS-13)"]:::code
         A1 --> A2 --> A3 --> A4
         A5["Middleware de session (qui es-tu ?)"]:::decide
         A9["Erreurs centrales : 400, 404, 500"]:::code
@@ -82,7 +82,7 @@ flowchart LR
         A8["GET /api/health<br/>codée en couches (ELS-12)"]:::code
     end
 
-    DB[("PostgreSQL chez Supabase<br/>9 tables")]:::decide
+    DB[("PostgreSQL chez Supabase<br/>9 tables, migration 001 (ELS-13)")]:::code
 
     subgraph EXT["Services externes"]
         direction TB
@@ -106,7 +106,7 @@ flowchart LR
 
 - **Le son ne passe pas par l'API** : le lecteur lit directement le flux de la station, sans relais, pour ne pas surcharger le serveur. Conséquence encore à trancher : une page en HTTPS ne peut lire que des flux en HTTPS (vue technique).
 - **Le navigateur ne parle jamais à l'annuaire** (C11) : l'API recopie les stations chaque nuit et les sert depuis sa base.
-- **Supabase sert uniquement de base** : authentification, règles d'accès et validation sont codées dans l'API.
+- **Supabase sert uniquement de base** : authentification, règles d'accès et validation sont codées dans l'API. Son API automatique est fermée : la sécurité par ligne (RLS) est activée sur chaque table, sans aucune règle (voir `docs/donnees.md`).
 
 ## 4. Vue technique : où ça tourne
 
@@ -116,7 +116,7 @@ flowchart LR
     T2["GitHub : main protégé,<br/>une PR par ticket"]:::code
     T3["Intégration continue :<br/>lint + tests à chaque push (ELS-14)"]:::decide
     T4["Hébergement API + interface :<br/>déploiement automatique (ELS-15),<br/>hébergeur à choisir"]:::trancher
-    T5["Supabase : PostgreSQL seul,<br/>son API auto à couper"]:::decide
+    T5["Supabase : PostgreSQL seul,<br/>son API auto fermée par la RLS"]:::code
     T6["Secrets en variables d'environnement,<br/>jamais dans le dépôt"]:::code
     T7["Navigateur de l'auditeur,<br/>mobile et desktop, en HTTPS"]:::decide
     T8["Flux des stations : seuls les flux<br/>HTTPS sont lisibles"]:::trancher
@@ -174,12 +174,42 @@ api/src/
 ├── services/
 │   ├── health-service.js
 │   └── health-service.test.js   test du service seul, sans serveur
-├── repositories/             arrive avec la connexion à la base (ELS-13)
+├── repositories/
+│   ├── users-repository.js   comptes : créer, chercher par e-mail (SQL paramétré)
+│   └── users-repository.test.js   dont la preuve contre l'injection SQL
+├── db/
+│   ├── pool.js               connexion à PostgreSQL (réserve de connexions, TLS vérifié)
+│   ├── pool.test.js
+│   ├── migrate.js            applique les migrations dans l'ordre (npm run db:migrate)
+│   ├── migrations/
+│   │   └── 001_initial_schema.sql   les 9 tables, contraintes, index, déclencheur, RLS
+│   ├── postgres-error-codes.js   noms des codes d'erreur de PostgreSQL (23505…)
+│   ├── schema.test.js        les tables et les contraintes du modèle
+│   └── start-database-for-tests.js  schéma jetable pour chaque fichier de test
 ├── app.test.js               l'application assemblée : santé, 404, 400, 413, 415
 └── start-app-for-tests.js    outils des tests (port libre, envoi de JSON)
 ```
 
 Chaque ressource (santé, stations, moments…) a un fichier dans chaque couche, nommé `<ressource>-<couche>.js`, en kebab-case comme le veut `CONTRIBUTING.md`.
+
+### Accès aux données et base
+
+La couche d'accès aux données est la seule à écrire du SQL. Chaque fonction reçoit en premier le pool de connexions (`db`) : le service lui passera celui de l'application, un test celui de sa base jetable.
+
+```js
+export async function findUserByEmail(db, email) {
+  const { rows } = await db.query(
+    'SELECT ... FROM users WHERE lower(email) = lower($1)',
+    [email],
+  );
+  return rows[0] ?? null;
+}
+```
+
+- **Toujours des requêtes paramétrées** : le texte SQL contient des repères `$1`, `$2`, et les valeurs voyagent à part. PostgreSQL ne les lit jamais comme du SQL. Un test le prouve : chercher l'e-mail `' OR 1=1 --` ne renvoie personne.
+- **Le modèle de données** (MCD, MLD, dictionnaire, choix des suppressions en cascade) est décrit dans [`docs/donnees.md`](donnees.md).
+- **Les migrations** sont des fichiers SQL numérotés, appliqués une seule fois par `npm run db:migrate` ([ADR-0001](adr/0001-migrations-en-sql-pur.md)). Les tests les rejouent dans un schéma jetable sur Supabase ([ADR-0002](adr/0002-tests-de-base-dans-un-schema-jetable.md)).
+- **La connexion est chiffrée et vérifiée** avec le certificat de Supabase (`DATABASE_CA_CERT`) ; sans lui, l'API refuse de se connecter à une base distante.
 
 ### Validation des entrées et erreurs
 
