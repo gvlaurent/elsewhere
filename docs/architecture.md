@@ -1,6 +1,6 @@
 # Architecture d'Elsewhere
 
-État au 28 novembre 2026 (ELS-14). Ce document décrit Elsewhere en quatre vues, du métier à l'infrastructure, puis détaille les couches de l'API et le déroulé de deux requêtes. Il complète la section 7 du PRD (`docs/prd.md`) et **il est mis à jour dans chaque pull request qui change l'architecture** (voir la dernière section).
+État au 28 novembre 2026 (ELS-15). Ce document décrit Elsewhere en quatre vues, du métier à l'infrastructure, puis détaille les couches de l'API et le déroulé de deux requêtes. Il complète la section 7 du PRD (`docs/prd.md`) et **il est mis à jour dans chaque pull request qui change l'architecture** (voir la dernière section).
 
 ## Pourquoi ce document
 
@@ -115,7 +115,7 @@ flowchart LR
     T1["Poste de dev : Ubuntu, Node 24,<br/>Cursor, Claude Code"]:::code
     T2["GitHub : main protégé,<br/>une PR par ticket"]:::code
     T3["Intégration continue (GitHub Actions) :<br/>lint + tests à chaque push (ELS-14)"]:::code
-    T4["Hébergement API + interface :<br/>déploiement automatique (ELS-15),<br/>hébergeur à choisir"]:::trancher
+    T4["Hébergement chez Render (ELS-15) :<br/>API + interface sur une seule adresse,<br/>déployées si la CI est verte"]:::decide
     T5["Supabase : PostgreSQL seul,<br/>son API auto fermée par la RLS"]:::code
     T6["Secrets en variables d'environnement,<br/>jamais dans le dépôt"]:::code
     T7["Navigateur de l'auditeur,<br/>mobile et desktop, en HTTPS"]:::decide
@@ -133,6 +133,8 @@ flowchart LR
 Le détail des outils et de leurs versions est dans `docs/els-11-environnement.md`.
 
 **L'intégration continue** (`.github/workflows/ci.yml`) rejoue à chaque push, sur une machine neuve de GitHub Actions, ce qu'on lance en local : ESLint et les tests pour l'API, ESLint et la construction pour l'interface. Les tests de base visent Supabase dans un schéma jetable, avec l'adresse de la base rangée dans le secret GitHub `DATABASE_URL` ; sans ce secret, ils sont sautés. Une PR ne peut être fusionnée que si ces deux contrôles sont verts (règle de protection de `main`).
+
+**L'hébergement** est décrit dans `render.yaml` ([ADR-0003](adr/0003-hebergement-sur-render.md)) : l'API (`elsewhere-api`, Node 24, Francfort) et l'interface (`elsewhere-web`, site statique) sont chez Render. Le navigateur ne connaît qu'une adresse, celle de l'interface : Render y transmet `/api/*` à l'API, comme Vite le fait en développement. Les deux services ne se déploient qu'après une CI verte sur `main` ; l'API lance la migration de la base à son démarrage.
 
 ## Les couches de l'API
 
@@ -265,7 +267,7 @@ flowchart LR
 
 **Une erreur imprévue ne laisse rien fuiter.** Son détail (message technique, pile d'appels, adresse de la base) part seulement dans les journaux du serveur : le client ne reçoit que le message générique, qui ne donne aucune prise à un attaquant. Une `HttpError` 5xx lancée par un service est montrée telle quelle, mais aussi journalisée.
 
-**Limites connues.** Hors de `/api`, Express répond encore avec sa page HTML par défaut : l'interface sera servie à part (ELS-15). Si une réponse a déjà commencé à partir quand une erreur survient, on ne peut plus la changer : Express coupe la connexion.
+**Limites connues.** Hors de `/api`, Express répond encore avec sa page HTML par défaut : l'interface est servie à part, par le site statique de Render (ELS-15). Si une réponse a déjà commencé à partir quand une erreur survient, on ne peut plus la changer : Express coupe la connexion.
 
 ### Exemple réel : la route de santé
 
