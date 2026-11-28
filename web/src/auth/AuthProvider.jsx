@@ -2,7 +2,7 @@
 // auth-context.js). Au chargement de l'application, il demande à l'API qui
 // est connecté (GET /api/auth/me) : le cookie de session est HttpOnly, le
 // JavaScript ne peut pas le lire, seule l'API sait s'il est valide.
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import * as authApi from '../api/auth-api.js'
 import { AuthContext } from './auth-context.js'
 
@@ -11,6 +11,9 @@ import { AuthContext } from './auth-context.js'
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
+  // Passe à true dès qu'une inscription, une connexion ou une déconnexion a
+  // réussi : la réponse de /me demandée au chargement est alors périmée.
+  const sessionChangedRef = useRef(false)
 
   useEffect(() => {
     // Asynchrone : la réponse peut arriver après que le composant a disparu
@@ -24,7 +27,9 @@ export function AuthProvider({ children }) {
       .catch(() => null)
       .then((currentUser) => {
         if (cancelled) return
-        setUser(currentUser)
+        // Course possible : si /me répond lentement (401) après une connexion
+        // réussie, on ne doit pas effacer le membre qui vient d'entrer.
+        if (!sessionChangedRef.current) setUser(currentUser)
         setIsLoading(false)
       })
     return () => {
@@ -32,14 +37,22 @@ export function AuthProvider({ children }) {
     }
   }, [])
 
+  // Retient le nouveau membre (ou null) après une action réussie. Sa
+  // réponse vient de l'API à l'instant : elle l'emporte sur celle de /me.
+  const applySession = useCallback((newUser) => {
+    sessionChangedRef.current = true
+    setUser(newUser)
+    setIsLoading(false)
+  }, [])
+
   // Chaque action appelle l'API, puis met l'état à jour seulement si elle a
   // réussi. En cas d'erreur, l'ApiError remonte à l'écran, qui l'affiche.
-  const register = useCallback(async (fields) => setUser(await authApi.register(fields)), [])
-  const logIn = useCallback(async (fields) => setUser(await authApi.logIn(fields)), [])
+  const register = useCallback(async (fields) => applySession(await authApi.register(fields)), [applySession])
+  const logIn = useCallback(async (fields) => applySession(await authApi.logIn(fields)), [applySession])
   const logOut = useCallback(async () => {
     await authApi.logOut()
-    setUser(null)
-  }, [])
+    applySession(null)
+  }, [applySession])
 
   // useMemo garde le même objet tant que rien ne change : les composants qui
   // lisent le contexte ne se redessinent pas pour rien.

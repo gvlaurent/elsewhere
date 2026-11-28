@@ -2,7 +2,7 @@
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
-import { MEMBER, callsTo, renderApp, stubApi } from '../test-utils.jsx'
+import { MEMBER, callsTo, renderApp, stubApi, stubApiWithPendingMe } from '../test-utils.jsx'
 
 // Remplit le formulaire d'inscription. Coche la case seulement si demandé.
 async function fillForm(user, { consent = true } = {}) {
@@ -21,17 +21,22 @@ describe("Écran d'inscription", () => {
     const password = screen.getByLabelText('Mot de passe')
     expect(password).toHaveAttribute('type', 'password')
     expect(password).toHaveAccessibleDescription(/12 caractères au moins/)
-    const consent = screen.getByRole('checkbox', { name: /J'accepte qu'Elsewhere conserve mon e-mail et mes moments/ })
+    const consent = screen.getByRole('checkbox', { name: /J'accepte qu'Elsewhere conserve mon e-mail/ })
     expect(consent).not.toBeChecked()
     expect(screen.getByRole('link', { name: "J'ai déjà un compte" })).toHaveAttribute('href', '/connexion')
   })
 
-  it("dit clairement ce qui est gardé, et ne demande rien sur l'origine", async () => {
+  it("dit clairement ce qui est gardé, sans rien promettre de plus, et ne demande rien sur l'origine", async () => {
     stubApi()
     renderApp('/inscription')
 
     await screen.findByRole('heading', { name: 'Créer un compte' })
-    expect(screen.getByText(/Je peux tout exporter ou supprimer à tout moment/)).toBeInTheDocument()
+    const consentText = screen.getByRole('checkbox').labels[0].textContent
+    expect(consentText).toMatch(/mon e-mail/)
+    expect(consentText).toMatch(/la date de cet accord/)
+    expect(consentText).toMatch(/moments et les listes/)
+    // Export et suppression (F7) ne sont pas encore codés : pas de promesse (ELS-40).
+    expect(consentText).not.toMatch(/export|supprim/i)
     // Deux champs à remplir et une case : aucune question sur l'origine (C2).
     expect(screen.getAllByRole('textbox')).toHaveLength(1)
     expect(screen.queryByLabelText(/pays|origine|nationalité/i)).not.toBeInTheDocument()
@@ -51,7 +56,7 @@ describe("Écran d'inscription", () => {
     expect(consent).toHaveAttribute('aria-invalid', 'true')
     expect(consent).toHaveAccessibleDescription(/Cochez la case/)
     expect(consent).toHaveFocus()
-    expect(screen.getByRole('alert')).toHaveTextContent(/corrigez le champ signalé/i)
+    expect(screen.getByRole('alert')).toHaveTextContent(/corrigez le ou les champs signalés/i)
   })
 
   it('envoie e-mail, mot de passe et consentement, puis montre le compte connecté', async () => {
@@ -127,5 +132,32 @@ describe("Écran d'inscription", () => {
     await user.click(screen.getByRole('button', { name: 'Créer mon compte' }))
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Erreur interne du serveur')
+  })
+
+  it("n'affiche pas le formulaire tant que l'API n'a pas dit qui est connecté", async () => {
+    const { answerMe } = stubApiWithPendingMe()
+    renderApp('/inscription')
+
+    expect(screen.getByRole('status')).toHaveTextContent('Chargement…')
+    expect(screen.queryByRole('heading', { name: 'Créer un compte' })).not.toBeInTheDocument()
+
+    answerMe({ status: 200, body: { user: MEMBER } })
+
+    expect(await screen.findByRole('heading', { name: 'Mon compte' })).toBeInTheDocument()
+  })
+
+  it("retire l'erreur de la case dès qu'elle est cochée", async () => {
+    stubApi()
+    const user = userEvent.setup()
+    renderApp('/inscription')
+    await screen.findByRole('heading', { name: 'Créer un compte' })
+
+    await fillForm(user, { consent: false })
+    await user.click(screen.getByRole('button', { name: 'Créer mon compte' }))
+    await user.click(screen.getByRole('checkbox'))
+
+    expect(screen.queryByText(/Cochez la case/)).not.toBeInTheDocument()
+    expect(screen.getByRole('checkbox')).not.toHaveAttribute('aria-invalid')
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 })

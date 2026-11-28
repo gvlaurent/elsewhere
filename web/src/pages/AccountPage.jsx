@@ -49,7 +49,7 @@ export function AccountPage() {
         <h2 id="account-data">Mes données</h2>
         <p className="note">
           <Icon name="info" size={16} />
-          Consentement donné le {DATE_FORMAT.format(new Date(user.consentAt))}. Aucune question sur votre origine.
+          Consentement donné le {DATE_FORMAT.format(new Date(user.consentAt))}.
         </p>
       </section>
 

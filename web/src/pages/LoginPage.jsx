@@ -9,38 +9,36 @@ import { BackLink } from '../components/BackLink.jsx'
 import { FormAlert } from '../components/FormAlert.jsx'
 import { Icon } from '../components/Icon.jsx'
 import { TextField } from '../components/TextField.jsx'
-import { firstInvalidField, splitFormErrors } from '../forms/form-errors.js'
+import { splitFormErrors } from '../forms/form-errors.js'
+import { useFormErrors } from '../forms/use-form-errors.js'
 
 const FIELDS = ['email', 'password']
 
 // Ne reçoit rien. Renvoie l'écran de connexion, ou mène au compte si le
 // membre est déjà connecté (y compris juste après sa connexion).
 export function LoginPage() {
-  const { user, logIn } = useAuth()
+  const { user, isLoading, logIn } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [fieldErrors, setFieldErrors] = useState({})
-  const [formError, setFormError] = useState('')
   const [isSending, setIsSending] = useState(false)
+  const { fieldErrors, formError, clearErrors, showErrors, clearFieldError } = useFormErrors(FIELDS)
   const emailRef = useRef(null)
   const passwordRef = useRef(null)
 
+  // On attend que l'API ait dit qui est connecté : sinon un membre connecté
+  // verrait le formulaire s'afficher un instant avant d'être redirigé.
+  if (isLoading) return <p role="status">Chargement…</p>
   if (user) return <Navigate to="/compte" replace />
 
   async function handleSubmit(event) {
     event.preventDefault()
     if (isSending) return // second envoi ignoré, voir RegisterPage.jsx
+    clearErrors()
     setIsSending(true)
     try {
       await logIn({ email, password })
     } catch (error) {
-      const errors = splitFormErrors(error, FIELDS)
-      setFieldErrors(errors.fieldErrors)
-      setFormError(errors.formError)
-      // Les références sont lues ici, dans une réaction à un événement, et
-      // jamais pendant l'affichage : c'est la règle de React.
-      const refs = { email: emailRef, password: passwordRef }
-      refs[firstInvalidField(FIELDS, errors.fieldErrors)]?.current?.focus()
+      showErrors(splitFormErrors(error, FIELDS), { email: emailRef, password: passwordRef })
       setIsSending(false)
     }
   }
@@ -62,7 +60,10 @@ export function LoginPage() {
           autoComplete="email"
           placeholder="vous@exemple.fr"
           value={email}
-          onChange={setEmail}
+          onChange={(value) => {
+            setEmail(value)
+            clearFieldError('email')
+          }}
           error={fieldErrors.email}
           inputRef={emailRef}
         />
@@ -72,7 +73,10 @@ export function LoginPage() {
           type="password"
           autoComplete="current-password"
           value={password}
-          onChange={setPassword}
+          onChange={(value) => {
+            setPassword(value)
+            clearFieldError('password')
+          }}
           error={fieldErrors.password}
           inputRef={passwordRef}
         />

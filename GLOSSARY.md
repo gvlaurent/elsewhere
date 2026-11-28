@@ -12,7 +12,7 @@ Le vocabulaire du projet. Les termes sont en français ; la colonne « Dans le c
 | Thème | `theme` | Genre musical d'une liste fermée (cumbia, highlife, rock turc). Une station peut en avoir plusieurs. |
 | Membre | `user` (rôle `member`) | Auditeur qui a créé un compte. On écoute sans compte ; le compte n'est demandé que pour garder quelque chose. |
 | Admin | `user` (rôle `admin`) | Membre qui entretient le catalogue : il masque ou réactive les stations signalées. |
-| Consentement | `consent` (envoi), `consent_at` (base) | Accord que le nouveau membre donne lui-même, en cochant une case jamais pré-cochée, à la conservation de son e-mail et de ses moments (C2). Sa date est prise par le serveur. Aucune question sur l'origine. |
+| Consentement | `consent` (envoi), `consent_at` (base) | Accord que le nouveau membre donne lui-même, en cochant une case jamais pré-cochée, à la conservation de son e-mail, de la date de cet accord, puis de ses moments et de ses listes (C2). Sa date est prise par le serveur. Aucune question sur l'origine. |
 | Session | `session` | Connexion ouverte d'un membre sur un appareil, valable 30 jours. Le navigateur garde un jeton secret dans un cookie, la base n'en garde que l'empreinte. Se déconnecter la supprime. |
 | Moment | `moment` | Souvenir gardé par un membre pendant une écoute : station, lieu, heure locale, titre s'il était lisible, thème d'entrée. Il garde une copie de ces informations. |
 | Passeport | — | Les moments d'un membre rangés par pays, du plus récent au plus ancien (F6). |

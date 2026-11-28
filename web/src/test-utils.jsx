@@ -15,19 +15,33 @@ export const MEMBER = {
   createdAt: '2026-11-11T20:58:00.000Z',
 }
 
-// Installe une fausse API. Reçoit un objet { 'POST /auth/login': réponse }
-// où chaque réponse est { status, body } ou une fonction (corps envoyé) qui
-// renvoie { status, body }. Une route absente répond comme l'API quand
-// personne n'est connecté : 401 sur /auth/me. Renvoie le faux fetch, pour
-// vérifier les appels reçus.
+const NOT_CONNECTED = { status: 401, body: { error: { message: 'Connexion requise', details: [] } } }
+
+// Installe une fausse API. Reçoit un objet { 'POST /auth/login': { status, body } }.
+// Une route absente répond comme l'API quand personne n'est connecté : 401
+// sur /auth/me. Renvoie le faux fetch, pour vérifier les appels reçus.
 export function stubApi(routes = {}) {
+  return installFakeFetch(routes, async () => routes['GET /auth/me'] ?? NOT_CONNECTED)
+}
+
+// Comme stubApi, mais GET /auth/me reste sans réponse jusqu'à ce que le
+// test appelle answerMe({ status, body }) : on imite une API lente.
+// Renvoie { fetchMock, answerMe }.
+export function stubApiWithPendingMe(routes = {}) {
+  let answerMe
+  const pending = new Promise((resolve) => {
+    answerMe = resolve
+  })
+  const fetchMock = installFakeFetch(routes, () => pending)
+  return { fetchMock, answerMe }
+}
+
+// Remplace fetch. Reçoit les réponses par route et une fonction qui donne
+// (plus ou moins vite) la réponse de GET /auth/me ; renvoie le faux fetch.
+function installFakeFetch(routes, meAnswer) {
   const fetchMock = vi.fn(async (url, options = {}) => {
     const key = `${options.method ?? 'GET'} ${url.replace(/^\/api/, '')}`
-    let answer = routes[key]
-    if (typeof answer === 'function') answer = answer(options.body ? JSON.parse(options.body) : undefined)
-    if (!answer && key === 'GET /auth/me') {
-      answer = { status: 401, body: { error: { message: 'Connexion requise', details: [] } } }
-    }
+    const answer = key === 'GET /auth/me' ? await meAnswer() : routes[key]
     if (!answer) throw new Error(`Route non prévue par le test : ${key}`)
     if (answer.status === 204) return new Response(null, { status: 204 })
     return Response.json(answer.body, { status: answer.status })

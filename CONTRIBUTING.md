@@ -10,7 +10,7 @@ Ce fichier fixe les conventions du dépôt. Elles s'appliquent à tout le code, 
 | Composants React | PascalCase, un composant par fichier | `StationCard.jsx` |
 | Constantes globales | MAJUSCULES_AVEC_TIRETS_BAS | `MAX_STATIONS_PER_PAGE` |
 | Fichiers JavaScript hors composants | kebab-case | `station-service.js` |
-| Fichiers de test | nom du fichier testé + `.test.js`, à côté de lui | `station-service.test.js` |
+| Fichiers de test | nom du fichier testé + `.test.js`, à côté de lui ; `.test.jsx` pour un composant React | `station-service.test.js`, `LoginPage.test.jsx` |
 | Tables SQL | snake_case, au pluriel | `users`, `list_stations` |
 | Colonnes SQL | snake_case, au singulier | `created_at`, `station_id` |
 | Clés étrangères | `<table au singulier>_id` | `user_id` |

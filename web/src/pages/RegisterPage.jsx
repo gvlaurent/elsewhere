@@ -11,43 +11,38 @@ import { useAuth } from '../auth/auth-context.js'
 import { BackLink } from '../components/BackLink.jsx'
 import { FormAlert } from '../components/FormAlert.jsx'
 import { TextField } from '../components/TextField.jsx'
-import { FIELD_ERROR_SUMMARY, firstInvalidField, splitFormErrors } from '../forms/form-errors.js'
+import { FIELD_ERROR_SUMMARY, splitFormErrors } from '../forms/form-errors.js'
+import { useFormErrors } from '../forms/use-form-errors.js'
 
 // Champs dans l'ordre d'affichage : le premier en erreur reçoit le focus.
 const FIELDS = ['email', 'password', 'consent']
 
-// Texte de la case, repris de la maquette 08 : ce qui est gardé, pourquoi,
-// et ce que le membre peut en faire.
+// Texte de la case : ce qui est gardé, et pourquoi. Il ne promet que ce qui
+// existe. L'export et la suppression des données (F7) arriveront avec
+// ELS-40 : ce texte sera mis à jour à ce moment-là.
 const CONSENT_TEXT =
-  "J'accepte qu'Elsewhere conserve mon e-mail et mes moments pour faire fonctionner mon passeport. Je peux tout exporter ou supprimer à tout moment."
+  "J'accepte qu'Elsewhere conserve mon e-mail et la date de cet accord, puis les moments et les listes que je garderai, pour faire fonctionner mon compte et mon passeport."
 const CONSENT_REQUIRED = 'Cochez la case pour accepter : sans elle, le compte ne peut pas être créé.'
 
 // Ne reçoit rien. Renvoie l'écran d'inscription, ou mène au compte si le
 // membre est déjà connecté (y compris juste après son inscription).
 export function RegisterPage() {
-  const { user, register } = useAuth()
+  const { user, isLoading, register } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [consent, setConsent] = useState(false) // jamais pré-cochée (C2)
-  const [fieldErrors, setFieldErrors] = useState({})
-  const [formError, setFormError] = useState('')
   const [isSending, setIsSending] = useState(false)
+  const { fieldErrors, formError, clearErrors, showErrors, clearFieldError } = useFormErrors(FIELDS)
   const emailRef = useRef(null)
   const passwordRef = useRef(null)
   const consentRef = useRef(null)
 
+  // On attend que l'API ait dit qui est connecté (voir LoginPage.jsx).
+  if (isLoading) return <p role="status">Chargement…</p>
   if (user) return <Navigate to="/compte" replace />
 
-  // Affiche les erreurs et donne le focus au premier champ fautif : au
-  // clavier ou au lecteur d'écran, on arrive directement sur ce qu'il faut corriger.
-  function showErrors(errors) {
-    setFieldErrors(errors.fieldErrors)
-    setFormError(errors.formError)
-    // Les références sont lues ici, dans une réaction à un événement, et
-    // jamais pendant l'affichage : c'est la règle de React.
-    const refs = { email: emailRef, password: passwordRef, consent: consentRef }
-    refs[firstInvalidField(FIELDS, errors.fieldErrors)]?.current?.focus()
-  }
+  // Les champs et leurs références, pour donner le focus au premier fautif.
+  const fieldRefs = () => ({ email: emailRef, password: passwordRef, consent: consentRef })
 
   async function handleSubmit(event) {
     // Le formulaire est envoyé par JavaScript, sans recharger la page.
@@ -55,8 +50,9 @@ export function RegisterPage() {
     // Un second clic pendant l'envoi est ignoré. Le bouton n'est pas désactivé
     // (disabled) : il perdrait le focus, et l'utilisateur au clavier avec lui.
     if (isSending) return
+    clearErrors()
     if (!consent) {
-      showErrors({ fieldErrors: { consent: CONSENT_REQUIRED }, formError: FIELD_ERROR_SUMMARY })
+      showErrors({ fieldErrors: { consent: CONSENT_REQUIRED }, formError: FIELD_ERROR_SUMMARY }, fieldRefs())
       return
     }
     setIsSending(true)
@@ -69,7 +65,7 @@ export function RegisterPage() {
         error.status === 409
           ? { fieldErrors: { email: error.message }, formError: FIELD_ERROR_SUMMARY }
           : splitFormErrors(error, FIELDS)
-      showErrors(errors)
+      showErrors(errors, fieldRefs())
       setIsSending(false)
     }
   }
@@ -93,7 +89,10 @@ export function RegisterPage() {
           autoComplete="email"
           placeholder="vous@exemple.fr"
           value={email}
-          onChange={setEmail}
+          onChange={(value) => {
+            setEmail(value)
+            clearFieldError('email')
+          }}
           error={fieldErrors.email}
           inputRef={emailRef}
         />
@@ -103,7 +102,10 @@ export function RegisterPage() {
           type="password"
           autoComplete="new-password"
           value={password}
-          onChange={setPassword}
+          onChange={(value) => {
+            setPassword(value)
+            clearFieldError('password')
+          }}
           hint="12 caractères au moins."
           error={fieldErrors.password}
           inputRef={passwordRef}
@@ -117,7 +119,10 @@ export function RegisterPage() {
               name="consent"
               type="checkbox"
               checked={consent}
-              onChange={(event) => setConsent(event.target.checked)}
+              onChange={(event) => {
+                setConsent(event.target.checked)
+                clearFieldError('consent')
+              }}
               aria-invalid={fieldErrors.consent ? true : undefined}
               aria-describedby={fieldErrors.consent ? 'consent-error' : undefined}
             />

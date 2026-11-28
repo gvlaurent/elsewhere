@@ -32,6 +32,6 @@ L'interface n'avait qu'une page d'accueil. Les écrans de compte (inscription, c
 ## Conséquences
 
 - Ajouter un écran : un fichier dans `pages/`, une ligne dans `App.jsx`, et un onglet dans `components/TabBar.jsx` s'il en a un.
-- Au chargement, l'écran du compte affiche « Chargement… » le temps que l'API réponde à `/api/auth/me`, pour ne pas renvoyer un membre connecté vers la connexion par erreur.
+- Au chargement, les écrans d'inscription, de connexion et du compte affichent « Chargement… » le temps que l'API réponde à `/api/auth/me` : un membre connecté ne voit pas le formulaire clignoter, et n'est pas renvoyé vers la connexion par erreur. Après une connexion ou une inscription réussie, une réponse tardive de `/me` est ignorée.
 - Si l'API est injoignable au chargement, l'interface se comporte comme pour un visiteur : on écoute sans compte.
 - En développement, la console du navigateur montre un 401 sur `/api/auth/me` quand personne n'est connecté : c'est la réponse attendue, pas une panne.

@@ -4,7 +4,7 @@ import { ApiError, fieldErrorsOf } from '../api/api-client.js'
 
 // Phrase de tête quand l'erreur est sur un champ : le détail est écrit sous
 // le champ (et lu par le lecteur d'écran quand il y reçoit le focus).
-export const FIELD_ERROR_SUMMARY = "Le formulaire n'a pas été envoyé : corrigez le champ signalé."
+export const FIELD_ERROR_SUMMARY = "Le formulaire n'a pas été envoyé : corrigez le ou les champs signalés."
 
 // Répartit une erreur entre les champs et la tête du formulaire. Reçoit
 // l'erreur levée par l'appel et la liste des champs affichés (['email',
@@ -24,9 +24,11 @@ export function splitFormErrors(error, fields) {
   return { fieldErrors, formError }
 }
 
-// Le premier champ en erreur, dans l'ordre d'affichage : c'est lui qui
-// reçoit le focus. Reçoit la liste des champs et fieldErrors ; renvoie un
-// nom de champ, ou undefined.
-export function firstInvalidField(fields, fieldErrors) {
-  return fields.find((field) => field in fieldErrors)
+// Donne le focus au premier champ en erreur, dans l'ordre d'affichage : au
+// clavier ou au lecteur d'écran, on arrive directement sur ce qu'il faut
+// corriger. Reçoit la liste des champs, fieldErrors et les références des
+// champs ({ email: emailRef… }). Ne renvoie rien.
+export function focusFirstInvalidField(fields, fieldErrors, refs) {
+  const field = fields.find((name) => name in fieldErrors)
+  refs[field]?.current?.focus()
 }

@@ -163,9 +163,9 @@ flowchart LR
 | `/compte` | Mon compte : e-mail, date du consentement, déconnexion | 12 (partie) |
 | toute autre | Page introuvable | |
 
-- **Qui est connecté** : au chargement, `AuthProvider` appelle `GET /api/auth/me` (200 : le membre ; 401 : personne). Le cookie de session est `HttpOnly` : seule l'API sait s'il est valide. L'onglet « Compte » mène au compte ou à la connexion selon la réponse.
-- **Les erreurs de l'API** sont placées par `forms/form-errors.js` : un champ fautif (400, ou 409 pour l'e-mail déjà inscrit) a son message sous le champ, relié par `aria-describedby`, et reçoit le focus ; les autres (401, 429, 500, réseau coupé) s'affichent en tête du formulaire, dans une zone `role="alert"` lue par les lecteurs d'écran.
-- **Le consentement** est vérifié deux fois : l'écran bloque l'envoi tant que la case n'est pas cochée, et l'API exige `consent: true` et enregistre la date, prise sur le serveur.
+- **Qui est connecté** : au chargement, `AuthProvider` appelle `GET /api/auth/me` (200 : le membre ; 401 : personne). Le cookie de session est `HttpOnly` : seule l'API sait s'il est valide. Les écrans de compte affichent « Chargement… » jusqu'à la réponse, puis redirigent si besoin. Une réponse de `/me` arrivée après une connexion ou une inscription réussie est ignorée. L'onglet « Compte » mène au compte ou à la connexion selon la réponse.
+- **Les erreurs de l'API** sont placées par `forms/form-errors.js` : un champ fautif (400, ou 409 pour l'e-mail déjà inscrit) a son message sous le champ, relié par `aria-describedby`, et reçoit le focus ; les autres (401, 429, 500, réseau coupé) s'affichent en tête du formulaire, dans une zone `role="alert"` lue par les lecteurs d'écran. Les erreurs sont vidées à chaque envoi (une erreur identique est ainsi annoncée de nouveau), et celle d'un champ disparaît dès qu'on le modifie.
+- **Le consentement** est vérifié deux fois : l'écran bloque l'envoi tant que la case n'est pas cochée, et l'API exige `consent: true` et enregistre la date, prise sur le serveur. Son texte dit seulement ce qui est gardé (l'e-mail, la date de l'accord, puis les moments et les listes) ; il parlera de l'export et de la suppression quand ELS-40 les aura codés.
 
 ```text
 web/src/
@@ -179,17 +179,19 @@ web/src/
 │   └── auth-api.test.js
 ├── auth/
 │   ├── auth-context.js       le contexte et le crochet useAuth()
-│   └── AuthProvider.jsx      demande /api/auth/me au chargement, garde le membre
+│   ├── AuthProvider.jsx      demande /api/auth/me au chargement, garde le membre
+│   └── AuthProvider.test.jsx une réponse tardive de /me n'efface pas un membre qui vient d'entrer
 ├── components/
 │   ├── Layout.jsx            mise en page commune : écran + barre d'onglets
-│   ├── Layout.test.jsx       onglets, compte, déconnexion, page introuvable
+│   ├── Layout.test.jsx       onglets selon qui est connecté, page introuvable
 │   ├── TabBar.jsx            onglets Lieux et Compte
 │   ├── BackLink.jsx          « ← Retour »
 │   ├── TextField.jsx         champ accessible : étiquette, aide, erreur
 │   ├── FormAlert.jsx         erreur en tête de formulaire (role="alert")
 │   └── Icon.jsx              icônes SVG décoratives
 ├── forms/
-│   └── form-errors.js        place une erreur de l'API sous son champ ou en tête
+│   ├── form-errors.js        place une erreur de l'API sous son champ ou en tête ; focus sur le premier fautif
+│   └── use-form-errors.js    état des erreurs d'un formulaire : vider, afficher, retirer celle d'un champ modifié
 ├── pages/
 │   ├── HomePage.jsx
 │   ├── RegisterPage.jsx      inscription et consentement (ELS-18)
@@ -197,6 +199,7 @@ web/src/
 │   ├── LoginPage.jsx
 │   ├── LoginPage.test.jsx
 │   ├── AccountPage.jsx       e-mail, date du consentement, déconnexion
+│   ├── AccountPage.test.jsx
 │   └── NotFoundPage.jsx
 ├── test-setup.js             préparation de Vitest (jsdom, nettoyage)
 └── test-utils.jsx            outils des tests : fausse API, application en mémoire

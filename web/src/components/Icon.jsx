@@ -2,7 +2,7 @@
 // (pas de bibliothèque d'icônes à charger). Elles sont décoratives : chaque
 // icône est accompagnée d'un texte visible, donc cachée aux lecteurs d'écran.
 
-const PATHS = {
+const ICONS = {
   back: <path d="M19 12H5m6-6-6 6 6 6" />,
   pin: (
     <>
@@ -25,7 +25,7 @@ const PATHS = {
   logout: <path d="M15 4h4v16h-4M10 8l-4 4 4 4m-4-4h10" />,
 }
 
-// Reçoit le nom de l'icône (une clé de PATHS) et sa taille en pixels ;
+// Reçoit le nom de l'icône (une clé de ICONS) et sa taille en pixels ;
 // renvoie le dessin SVG, qui prend la couleur du texte autour de lui.
 export function Icon({ name, size = 20 }) {
   return (
@@ -42,7 +42,7 @@ export function Icon({ name, size = 20 }) {
       aria-hidden="true"
       focusable="false"
     >
-      {PATHS[name]}
+      {ICONS[name]}
     </svg>
   )
 }
