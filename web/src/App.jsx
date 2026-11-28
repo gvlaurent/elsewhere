@@ -1,6 +1,6 @@
 // Rôle : la carte des écrans de l'interface. Associe chaque adresse à son
-// écran, tous placés dans la mise en page commune (Layout). C'est le seul
-// fichier à modifier pour ajouter un écran (ADR-0005).
+// écran, tous placés dans la mise en page commune (Layout). Un nouvel écran
+// s'ajoute ici, et dans TabBar.jsx s'il a un onglet (ADR-0006).
 //
 // React Router lit l'adresse du navigateur et affiche l'écran qui lui
 // correspond, sans recharger la page.

@@ -1,6 +1,6 @@
 # Architecture d'Elsewhere
 
-État au 28 novembre 2026 (ELS-17). Ce document décrit Elsewhere en quatre vues, du métier à l'infrastructure, puis détaille les couches de l'API et le déroulé de deux requêtes. Il complète la section 7 du PRD (`docs/prd.md`) et **il est mis à jour dans chaque pull request qui change l'architecture** (voir la dernière section).
+État au 28 novembre 2026 (ELS-21 et ELS-18). Ce document décrit Elsewhere en quatre vues, du métier à l'infrastructure, puis détaille les couches de l'API et le déroulé de deux requêtes. Il complète la section 7 du PRD (`docs/prd.md`) et **il est mis à jour dans chaque pull request qui change l'architecture** (voir la dernière section).
 
 ## Pourquoi ce document
 
@@ -53,7 +53,7 @@ Les fonctions de l'application, regroupées par grand domaine (les « quartiers 
 | Thèmes (F2) | Titre en cours : jamais de faux titre | Listes personnalisées (F8) | Consentement à l'inscription (C2) | Masquer / réactiver (F10) |
 | | Signaler une station en panne (C8) | Raccourcis (F11) | Export et suppression (F7) | Rôles vérifiés par l'API |
 
-Côté API, le compte, la connexion (F4) et la déconnexion de C1 sont codés (ELS-17) ; les écrans viendront avec ELS-21. Les autres fonctions sont décidées, pas encore codées.
+Le compte, la connexion (F4), la déconnexion de C1 et le consentement à l'inscription (C2) sont codés : l'API avec ELS-17, les écrans avec ELS-21 et ELS-18. Les autres fonctions sont décidées, pas encore codées.
 
 ## 3. Vue applicative : composants et flux
 
@@ -63,8 +63,9 @@ Qui parle à qui. Le navigateur ne parle qu'à l'API d'Elsewhere, et seule l'API
 flowchart LR
     subgraph NAV["Navigateur : React + Vite"]
         direction TB
-        N1["Page d'accueil"]:::code
-        N2["Écrans : lieux, direct, thèmes, lecteur,<br/>passeport, compte (maquettes ELS-7)"]:::decide
+        N0["Socle : navigation (React Router),<br/>mise en page, appel à l'API,<br/>état « qui est connecté » (ELS-21)"]:::code
+        N1["Écrans codés : accueil, inscription<br/>avec consentement, connexion, compte"]:::code
+        N2["Écrans : lieux, direct, thèmes, lecteur,<br/>passeport (maquettes ELS-7)"]:::decide
         N3["Lecteur audio : lit le flux<br/>de la station, sans relais"]:::decide
     end
 
@@ -134,9 +135,72 @@ flowchart LR
 
 Le détail des outils et de leurs versions est dans `docs/els-11-environnement.md`.
 
-**L'intégration continue** (`.github/workflows/ci.yml`) rejoue à chaque push, sur une machine neuve de GitHub Actions, ce qu'on lance en local : ESLint et les tests pour l'API, ESLint et la construction pour l'interface. Les tests de base visent Supabase dans un schéma jetable, avec l'adresse de la base rangée dans le secret GitHub `DATABASE_URL` ; sans ce secret, ils sont sautés. Une PR ne peut être fusionnée que si ces deux contrôles sont verts (règle de protection de `main`).
+**L'intégration continue** (`.github/workflows/ci.yml`) rejoue à chaque push, sur une machine neuve de GitHub Actions, ce qu'on lance en local : ESLint et les tests pour l'API, ESLint, les tests et la construction pour l'interface. Les tests de base visent Supabase dans un schéma jetable, avec l'adresse de la base rangée dans le secret GitHub `DATABASE_URL` ; sans ce secret, ils sont sautés. Une PR ne peut être fusionnée que si ces deux contrôles sont verts (règle de protection de `main`).
 
 **L'hébergement** est décrit dans `render.yaml` ([ADR-0003](adr/0003-hebergement-sur-render.md)) : l'API (`elsewhere-api`, Node 24, Francfort) et l'interface (`elsewhere-web`, site statique) sont chez Render. Le navigateur ne connaît qu'une adresse, celle de l'interface : Render y transmet `/api/*` à l'API, comme Vite le fait en développement. Les deux services ne se déploient qu'après une CI verte sur `main` ; l'API lance la migration de la base à son démarrage. Adresse de préproduction : <https://elsewhere-web-ifej.onrender.com>.
+
+## L'interface React
+
+L'interface est servie en fichiers statiques. Elle ne parle qu'à l'API, toujours par `/api/...` à sa propre adresse, et toujours par un seul module (`api/api-client.js`). Les choix sont expliqués dans l'[ADR-0006](adr/0006-routage-et-organisation-de-l-interface.md).
+
+```mermaid
+flowchart LR
+    M["main.jsx"] --> BR["BrowserRouter<br/>(adresse ↔ écran)"] --> AP["AuthProvider<br/>qui est connecté ?"] --> APP["App.jsx<br/>carte des écrans"] --> L["Layout<br/>colonne mobile + onglets"]
+    L --> P["pages/ : un écran par fichier"]
+    P -- "useAuth()" --> AP
+    AP -- "auth-api.js" --> C["api-client.js<br/>fetch /api, erreurs communes"]
+    C -- "HTTPS · JSON + cookie" --> API["API Express"]
+
+    classDef code fill:#d3f9d8,stroke:#2b8a3e,color:#000
+    class M,BR,AP,APP,L,P,C code
+```
+
+| Adresse | Écran | Maquette |
+| --- | --- | --- |
+| `/` | Accueil (en-tête des lieux) | 01 |
+| `/inscription` | Créer un compte, avec la case de consentement non cochée (C2) | 08 |
+| `/connexion` | Se connecter | 09 |
+| `/compte` | Mon compte : e-mail, date du consentement, déconnexion | 12 (partie) |
+| toute autre | Page introuvable | |
+
+- **Qui est connecté** : au chargement, `AuthProvider` appelle `GET /api/auth/me` (200 : le membre ; 401 : personne). Le cookie de session est `HttpOnly` : seule l'API sait s'il est valide. L'onglet « Compte » mène au compte ou à la connexion selon la réponse.
+- **Les erreurs de l'API** sont placées par `forms/form-errors.js` : un champ fautif (400, ou 409 pour l'e-mail déjà inscrit) a son message sous le champ, relié par `aria-describedby`, et reçoit le focus ; les autres (401, 429, 500, réseau coupé) s'affichent en tête du formulaire, dans une zone `role="alert"` lue par les lecteurs d'écran.
+- **Le consentement** est vérifié deux fois : l'écran bloque l'envoi tant que la case n'est pas cochée, et l'API exige `consent: true` et enregistre la date, prise sur le serveur.
+
+```text
+web/src/
+├── main.jsx                  point d'entrée : routeur, état de connexion, App
+├── App.jsx                   la carte des écrans (adresse → écran)
+├── index.css                 styles communs, couleurs nommées des maquettes
+├── api/
+│   ├── api-client.js         le seul appel à fetch : /api, JSON, cookie, ApiError
+│   ├── api-client.test.js
+│   ├── auth-api.js           inscription, connexion, déconnexion, qui est connecté
+│   └── auth-api.test.js
+├── auth/
+│   ├── auth-context.js       le contexte et le crochet useAuth()
+│   └── AuthProvider.jsx      demande /api/auth/me au chargement, garde le membre
+├── components/
+│   ├── Layout.jsx            mise en page commune : écran + barre d'onglets
+│   ├── Layout.test.jsx       onglets, compte, déconnexion, page introuvable
+│   ├── TabBar.jsx            onglets Lieux et Compte
+│   ├── BackLink.jsx          « ← Retour »
+│   ├── TextField.jsx         champ accessible : étiquette, aide, erreur
+│   ├── FormAlert.jsx         erreur en tête de formulaire (role="alert")
+│   └── Icon.jsx              icônes SVG décoratives
+├── forms/
+│   └── form-errors.js        place une erreur de l'API sous son champ ou en tête
+├── pages/
+│   ├── HomePage.jsx
+│   ├── RegisterPage.jsx      inscription et consentement (ELS-18)
+│   ├── RegisterPage.test.jsx
+│   ├── LoginPage.jsx
+│   ├── LoginPage.test.jsx
+│   ├── AccountPage.jsx       e-mail, date du consentement, déconnexion
+│   └── NotFoundPage.jsx
+├── test-setup.js             préparation de Vitest (jsdom, nettoyage)
+└── test-utils.jsx            outils des tests : fausse API, application en mémoire
+```
 
 ## Les couches de l'API
 

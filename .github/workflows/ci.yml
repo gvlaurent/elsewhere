@@ -1,6 +1,6 @@
 # Rôle : intégration continue d'Elsewhere (ELS-14, story C13). À chaque push,
 # sur n'importe quelle branche, GitHub Actions vérifie le code sur une machine
-# neuve : ESLint et les tests pour l'API, ESLint et la construction pour
+# neuve : ESLint et les tests pour l'API, ESLint, les tests et la construction pour
 # l'interface. Une croix rouge sur la PR veut dire « ne pas fusionner ».
 #
 # Les tests qui touchent la base tournent dans un schéma jetable chez
