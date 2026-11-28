@@ -24,6 +24,7 @@ Les versions sont celles réellement installées, relevées avec `node -v`, `npm
 | Paquet | Version | Rôle | Pourquoi ce choix |
 | --- | --- | --- | --- |
 | Express | 5.3.0 | Serveur HTTP : routes et middlewares | Le plus répandu en Node, simple à organiser en couches |
+| `pg` (node-postgres) | 8.23.1 | Connexion à PostgreSQL et requêtes paramétrées (ajouté avec ELS-13) | Pilote PostgreSQL de référence en Node, sans ORM : le SQL reste écrit à la main |
 | `node:test` | intégré à Node 24 | Lance les tests (`npm test`) | Aucune dépendance à installer pour tester |
 | ESLint | 10.14.0 | Repère les erreurs avant l'exécution (`npm run lint`) | Standard du JavaScript ; même outil que l'interface |
 | `@eslint/js` | 10.0.1 | Règles recommandées de JavaScript | Base de règles maintenue par l'équipe d'ESLint |
