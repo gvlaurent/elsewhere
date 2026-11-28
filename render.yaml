@@ -47,9 +47,11 @@ services:
       # L'interface appelle /api/… sur sa propre adresse ; Render transmet à
       # l'API. Le navigateur ne voit qu'un seul site : pas de CORS à ouvrir.
       # Les règles sont lues dans l'ordre : celle-ci doit rester la première.
+      # L'adresse est celle que Render a donnée à l'API (« -ypk5 » ajouté car
+      # le nom elsewhere-api était déjà pris) : elle ne se devine pas.
       - type: rewrite
         source: /api/*
-        destination: https://elsewhere-api.onrender.com/api/*
+        destination: https://elsewhere-api-ypk5.onrender.com/api/*
       # Toute autre adresse renvoie la page de l'application : c'est React
       # qui affichera le bon écran.
       - type: rewrite
