@@ -34,7 +34,7 @@ The browser only talks to Elsewhere's own API, and only the API talks to the dat
 
 ```mermaid
 flowchart LR
-    W["Interface<br/>React + Vite"]:::decide
+    W["Interface<br/>React + Vite<br/>(sign-up, log-in;<br/>other screens next)"]:::code
     subgraph API["API Express, in layers"]
         direction TB
         R["Routes + input validation<br/>+ session check (401)"]:::code --> C["Controllers"]:::code --> S["Services<br/>(business rules;<br/>accounts built)"]:::decide --> D["Data access<br/>(parameterized SQL)"]:::code
@@ -56,7 +56,7 @@ flowchart LR
     classDef externe fill:#ffffff,stroke:#333333,stroke-dasharray:4 3,color:#000
 ```
 
-Green blocks are built (the layers are in place with `GET /api/health`, the 9-table database schema, accounts: sign-up, log-in and log-out, with Argon2id password hashes and server-side sessions in an HttpOnly cookie, and the station import from Radio Browser, which keeps only HTTPS streams), blue ones are decided but not built yet. The data model (conceptual and logical models, data dictionary) is in [`docs/donnees.md`](docs/donnees.md) (in French). Four views (business, functional, application, infrastructure), the status of each block (built, decided, still open) and the request walkthroughs are in [`docs/architecture.md`](docs/architecture.md) (in French). It is updated in every pull request that changes the architecture.
+Green blocks are built (the layers are in place with `GET /api/health`, the 9-table database schema, accounts: sign-up, log-in and log-out, with Argon2id password hashes and server-side sessions in an HttpOnly cookie, the station import from Radio Browser, which keeps only HTTPS streams, and the interface's base: navigation, a mobile layout, the sign-up screen with its unticked consent box, the log-in and account screens), blue ones are decided but not built yet. The data model (conceptual and logical models, data dictionary) is in [`docs/donnees.md`](docs/donnees.md) (in French). Four views (business, functional, application, infrastructure), the status of each block (built, decided, still open) and the request walkthroughs are in [`docs/architecture.md`](docs/architecture.md) (in French). It is updated in every pull request that changes the architecture.
 
 ## How the work is run
 
@@ -75,7 +75,7 @@ Green blocks are built (the layers are in place with `GET /api/health`, the 9-ta
 | `docs/` | Tests, decisions, mockups and the [work environment](docs/els-11-environnement.md) |
 | `scripts/` | Rerunnable test scripts |
 
-The application is being built ticket by ticket: for now, the API answers a health check and handles accounts, and the interface shows a home page.
+The application is being built ticket by ticket: for now, the API answers a health check and handles accounts, and the interface lets you sign up, log in and log out.
 
 ## Try it
 
