@@ -182,7 +182,8 @@ api/src/
 │   ├── pool.test.js
 │   ├── migrate.js            applique les migrations dans l'ordre (npm run db:migrate)
 │   ├── migrations/
-│   │   └── 001_initial_schema.sql   les 9 tables, contraintes, index, RLS
+│   │   └── 001_initial_schema.sql   les 9 tables, contraintes, index, déclencheur, RLS
+│   ├── postgres-error-codes.js   noms des codes d'erreur de PostgreSQL (23505…)
 │   ├── schema.test.js        les tables et les contraintes du modèle
 │   └── start-database-for-tests.js  schéma jetable pour chaque fichier de test
 ├── app.test.js               l'application assemblée : santé, 404, 400, 413, 415

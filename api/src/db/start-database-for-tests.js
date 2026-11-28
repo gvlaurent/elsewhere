@@ -8,11 +8,19 @@ import { randomBytes } from 'node:crypto';
 import { createPool } from './pool.js';
 import { runMigrations } from './migrate.js';
 
-// Raison du saut, affichée par node --test quand la base n'est pas configurée
-// (par exemple dans l'intégration continue sans secret). undefined = on lance.
-export const skipWithoutDatabase = process.env.DATABASE_URL
-  ? undefined
-  : 'DATABASE_URL absente : tests de base sautés (voir api/.env.example)';
+// Options à passer à chaque test qui touche la base :
+// test('…', requiresDatabase, async (t) => { … }).
+// Sans DATABASE_URL (par exemple dans l'intégration continue sans secret),
+// node --test saute ces tests et affiche la raison, au lieu d'échouer.
+export const requiresDatabase = {
+  skip: process.env.DATABASE_URL
+    ? false
+    : 'DATABASE_URL absente : tests de base sautés (voir api/.env.example)',
+};
+
+// Option de runMigrations qui coupe ses messages, pour garder la sortie
+// des tests lisible.
+export const withoutLogs = { log: () => {} };
 
 // Crée un schéma jetable, y applique toutes les migrations et programme son
 // effacement à la fin du test. Reçoit le contexte du test (t). Renvoie un
@@ -42,6 +50,6 @@ export async function startTestDatabase(t) {
     await pool.end();
   });
 
-  await runMigrations(pool, { log: () => {} });
+  await runMigrations(pool, withoutLogs);
   return pool;
 }

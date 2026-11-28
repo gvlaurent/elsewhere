@@ -1,7 +1,9 @@
 // Rôle : ouvre la connexion entre l'API et PostgreSQL (hébergé chez Supabase).
-// Seule la couche d'accès aux données (src/repositories/) et le script de
-// migration s'en servent : les routes, contrôleurs et services ne parlent
-// jamais directement à la base.
+// createPool() est appelée par le script de migration et par l'outil des
+// tests (start-database-for-tests.js), puis le sera par le démarrage du
+// serveur. Le pool créé n'est ensuite utilisé que par la couche d'accès aux
+// données (src/repositories/) : les routes, contrôleurs et services ne
+// parlent jamais directement à la base.
 //
 // Un « pool » est une réserve de connexions ouvertes à l'avance : chaque
 // requête en emprunte une puis la rend, au lieu d'ouvrir une connexion

@@ -59,6 +59,27 @@ CREATE TABLE stations (
 );
 CREATE INDEX stations_place_id_idx ON stations (place_id);
 
+-- Déclencheur (trigger) : une fonction que PostgreSQL exécute tout seul,
+-- ici juste avant chaque modification d'une station. Il met updated_at à
+-- l'heure courante : la date reste juste même si le code qui modifie la
+-- station (synchro de nuit, modération) oublie de la changer.
+-- « SET search_path = '' » : recommandé par Supabase pour qu'une fonction
+-- ne puisse pas être détournée par une table ou une fonction homonyme
+-- créée ailleurs ; now() reste trouvée, elle fait partie de PostgreSQL.
+CREATE FUNCTION set_updated_at() RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = ''
+AS $$
+BEGIN
+  NEW.updated_at := now();  -- NEW : la ligne telle qu'elle sera enregistrée
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER stations_set_updated_at
+  BEFORE UPDATE ON stations
+  FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
 -- Thèmes : liste fermée (cumbia, highlife…), remplie par migration (F2).
 CREATE TABLE themes (
   id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -92,7 +113,10 @@ CREATE TABLE moments (
   theme_name text,                          -- NULL : entré par un lieu, pas par un thème
   track_title text,                         -- NULL : « titre indisponible », jamais inventé
   kept_at timestamptz NOT NULL DEFAULT now(),  -- instant exact, pour trier
-  local_time timestamp NOT NULL             -- heure affichée sur place, sans fuseau
+  local_time timestamp NOT NULL,            -- heure affichée sur place, sans fuseau
+  -- Un moment relié à un thème en garde le nom. L'inverse reste permis :
+  -- si le thème disparaît, theme_id passe à NULL et la copie du nom reste.
+  CHECK (theme_id IS NULL OR theme_name IS NOT NULL)
 );
 -- Sert le passeport : les moments d'un membre, du plus récent au plus ancien.
 CREATE INDEX moments_user_id_kept_at_idx ON moments (user_id, kept_at DESC);
@@ -104,9 +128,11 @@ CREATE TABLE lists (
   name text NOT NULL CHECK (char_length(btrim(name)) BETWEEN 1 AND 60),
   created_at timestamptz NOT NULL DEFAULT now()
 );
--- Nom unique pour un même membre, sans tenir compte de la casse (C4).
+-- Nom unique pour un même membre, sans tenir compte de la casse ni des
+-- espaces autour (C4) : « Réveil », « réveil » et « Réveil » suivi d'une
+-- espace sont le même nom. btrim, comme dans la règle CHECK ci-dessus.
 -- Cet index sert aussi « les listes d'un membre ».
-CREATE UNIQUE INDEX lists_user_id_name_unique ON lists (user_id, lower(name));
+CREATE UNIQUE INDEX lists_user_id_name_unique ON lists (user_id, lower(btrim(name)));
 
 -- Contenu des listes : plusieurs à plusieurs, sans doublon (C5).
 CREATE TABLE list_stations (

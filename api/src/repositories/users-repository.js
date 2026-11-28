@@ -19,7 +19,8 @@ const PUBLIC_COLUMNS = `
 
 // Enregistre un nouveau compte. Reçoit le pool et { email, passwordHash,
 // consentAt } (le hash est calculé avant, par le service). Renvoie le compte
-// créé, sans son hash. Lève l'erreur PostgreSQL 23505 si l'e-mail existe déjà.
+// créé, sans son hash. Si l'e-mail existe déjà, lève l'erreur PostgreSQL de
+// code PG_ERROR.UNIQUE_VIOLATION (voir src/db/postgres-error-codes.js).
 export async function createUser(db, { email, passwordHash, consentAt }) {
   const { rows } = await db.query(
     `INSERT INTO users (email, password_hash, consent_at)

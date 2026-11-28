@@ -4,21 +4,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { runMigrations } from './migrate.js';
-import { startTestDatabase, skipWithoutDatabase } from './start-database-for-tests.js';
+import { PG_ERROR } from './postgres-error-codes.js';
+import { startTestDatabase, requiresDatabase, withoutLogs } from './start-database-for-tests.js';
 
-const options = { skip: skipWithoutDatabase };
-
-// Code d'erreur PostgreSQL, pour vérifier quelle règle a refusé la donnée.
-const UNIQUE_VIOLATION = '23505';
-const CHECK_VIOLATION = '23514';
-// Piège : ON DELETE RESTRICT ne renvoie pas « restrict_violation » (23001),
-// que PostgreSQL ne lève pas pour une clé étrangère, mais le code commun à
-// toutes les clés étrangères (23503, foreign_key_violation).
-const FOREIGN_KEY_VIOLATION = '23503';
-
-// Insère un lieu, une station et un membre, socle commun de plusieurs tests.
-// Reçoit le pool ; renvoie les identifiants créés.
-async function insertBasics(db) {
+// Insère un lieu (Lagos), une station (Cool FM) et un membre (Julien),
+// socle commun de plusieurs tests. Reçoit le pool ; renvoie leurs
+// identifiants { placeId, stationId, userId }.
+async function insertPlaceStationAndMember(db) {
   const place = await db.query(
     `INSERT INTO places (name, country_code, country_name, timezone)
      VALUES ('Lagos', 'NG', 'Nigeria', 'Africa/Lagos') RETURNING id`,
@@ -36,7 +28,20 @@ async function insertBasics(db) {
   return { placeId, stationId: station.rows[0].id, userId: user.rows[0].id };
 }
 
-test('les migrations créent les 9 tables du modèle', options, async (t) => {
+// Garde un moment à Lagos sur Cool FM. Reçoit le pool et les colonnes
+// propres au test ({ userId, stationId, trackTitle, themeId, themeName }) ;
+// les copies du lieu et de la station sont fixes. Renvoie la promesse de
+// la requête, pour pouvoir vérifier qu'elle est refusée.
+function insertMoment(db, { userId, stationId, trackTitle = null, themeId = null, themeName = null }) {
+  return db.query(
+    `INSERT INTO moments (user_id, station_id, theme_id, station_name, place_name,
+       country_code, country_name, theme_name, track_title, local_time)
+     VALUES ($1, $2, $3, 'Cool FM', 'Lagos', 'NG', 'Nigeria', $4, $5, '2026-11-24 21:30')`,
+    [userId, stationId, themeId, themeName, trackTitle],
+  );
+}
+
+test('les migrations créent les 9 tables du modèle', requiresDatabase, async (t) => {
   const db = await startTestDatabase(t);
 
   const { rows } = await db.query(
@@ -52,28 +57,28 @@ test('les migrations créent les 9 tables du modèle', options, async (t) => {
   );
 });
 
-test('relancer les migrations ne rejoue rien', options, async (t) => {
+test('relancer les migrations ne rejoue rien', requiresDatabase, async (t) => {
   const db = await startTestDatabase(t);
 
-  const applied = await runMigrations(db, { log: () => {} });
+  const applied = await runMigrations(db, withoutLogs);
 
   assert.deepEqual(applied, []);
 });
 
-test('un e-mail ne sert qu\'une fois, majuscules comprises', options, async (t) => {
+test('un e-mail ne sert qu\'une fois, majuscules comprises', requiresDatabase, async (t) => {
   const db = await startTestDatabase(t);
-  await insertBasics(db);
+  await insertPlaceStationAndMember(db);
 
   await assert.rejects(
     db.query(
       `INSERT INTO users (email, password_hash, consent_at)
        VALUES ('Julien@Example.com', 'hash', now())`,
     ),
-    { code: UNIQUE_VIOLATION },
+    { code: PG_ERROR.UNIQUE_VIOLATION },
   );
 });
 
-test('le rôle d\'un compte est « member » ou « admin », rien d\'autre', options, async (t) => {
+test('le rôle d\'un compte est « member » ou « admin », rien d\'autre', requiresDatabase, async (t) => {
   const db = await startTestDatabase(t);
 
   await assert.rejects(
@@ -81,60 +86,94 @@ test('le rôle d\'un compte est « member » ou « admin », rien d\'autre', opt
       `INSERT INTO users (email, password_hash, consent_at, role)
        VALUES ('a@example.com', 'hash', now(), 'superadmin')`,
     ),
-    { code: CHECK_VIOLATION },
+    { code: PG_ERROR.CHECK_VIOLATION },
   );
 });
 
-test('un titre lu sans son heure de lecture est refusé', options, async (t) => {
+test('un titre lu sans son heure de lecture est refusé', requiresDatabase, async (t) => {
   const db = await startTestDatabase(t);
-  const { stationId } = await insertBasics(db);
+  const { stationId } = await insertPlaceStationAndMember(db);
 
   await assert.rejects(
     db.query(`UPDATE stations SET last_title = 'Fela Kuti - Zombie' WHERE id = $1`, [stationId]),
-    { code: CHECK_VIOLATION },
+    { code: PG_ERROR.CHECK_VIOLATION },
   );
 });
 
-test('un membre ne signale une station qu\'une fois', options, async (t) => {
+test('modifier une station met à jour sa date de mise à jour', requiresDatabase, async (t) => {
   const db = await startTestDatabase(t);
-  const { stationId, userId } = await insertBasics(db);
+  const { stationId } = await insertPlaceStationAndMember(db);
+  // On recule la date à la main : sans le déclencheur, elle resterait au 1er janvier.
+  await db.query(`UPDATE stations SET updated_at = '2026-01-01' WHERE id = $1`, [stationId]);
+
+  await db.query(`UPDATE stations SET name = 'Cool FM Lagos' WHERE id = $1`, [stationId]);
+
+  const { rows } = await db.query(
+    `SELECT updated_at > '2026-01-02' AS refreshed FROM stations WHERE id = $1`,
+    [stationId],
+  );
+  assert.equal(rows[0].refreshed, true);
+});
+
+test('un membre ne signale une station qu\'une fois', requiresDatabase, async (t) => {
+  const db = await startTestDatabase(t);
+  const { stationId, userId } = await insertPlaceStationAndMember(db);
   const report = `INSERT INTO reports (user_id, station_id, reason) VALUES ($1, $2, 'no_sound')`;
 
   await db.query(report, [userId, stationId]);
 
-  await assert.rejects(db.query(report, [userId, stationId]), { code: UNIQUE_VIOLATION });
+  await assert.rejects(db.query(report, [userId, stationId]), { code: PG_ERROR.UNIQUE_VIOLATION });
 });
 
-test('deux listes d\'un même membre ne portent pas le même nom', options, async (t) => {
+test('deux listes d\'un même membre ne portent pas le même nom', requiresDatabase, async (t) => {
   const db = await startTestDatabase(t);
-  const { userId } = await insertBasics(db);
+  const { userId } = await insertPlaceStationAndMember(db);
   await db.query(`INSERT INTO lists (user_id, name) VALUES ($1, 'Réveil')`, [userId]);
 
   await assert.rejects(
     db.query(`INSERT INTO lists (user_id, name) VALUES ($1, 'réveil')`, [userId]),
-    { code: UNIQUE_VIOLATION },
+    { code: PG_ERROR.UNIQUE_VIOLATION },
   );
 });
 
-test('un lieu qui porte encore des stations ne peut pas être supprimé', options, async (t) => {
+test('des espaces autour du nom ne font pas une nouvelle liste', requiresDatabase, async (t) => {
   const db = await startTestDatabase(t);
-  const { placeId } = await insertBasics(db);
+  const { userId } = await insertPlaceStationAndMember(db);
+  await db.query(`INSERT INTO lists (user_id, name) VALUES ($1, 'Réveil')`, [userId]);
+
+  await assert.rejects(
+    db.query(`INSERT INTO lists (user_id, name) VALUES ($1, ' Réveil ')`, [userId]),
+    { code: PG_ERROR.UNIQUE_VIOLATION },
+  );
+});
+
+test('un lieu qui porte encore des stations ne peut pas être supprimé', requiresDatabase, async (t) => {
+  const db = await startTestDatabase(t);
+  const { placeId } = await insertPlaceStationAndMember(db);
 
   await assert.rejects(
     db.query('DELETE FROM places WHERE id = $1', [placeId]),
-    { code: FOREIGN_KEY_VIOLATION },
+    { code: PG_ERROR.FOREIGN_KEY_VIOLATION },
   );
 });
 
-test('supprimer un compte efface ses moments, listes et signalements', options, async (t) => {
+test('un moment relié à un thème en garde aussi le nom', requiresDatabase, async (t) => {
   const db = await startTestDatabase(t);
-  const { stationId, userId } = await insertBasics(db);
-  await db.query(
-    `INSERT INTO moments (user_id, station_id, station_name, place_name,
-       country_code, country_name, local_time)
-     VALUES ($1, $2, 'Cool FM', 'Lagos', 'NG', 'Nigeria', '2026-11-24 21:30')`,
-    [userId, stationId],
+  const { stationId, userId } = await insertPlaceStationAndMember(db);
+  const theme = await db.query(
+    `INSERT INTO themes (slug, name) VALUES ('highlife', 'Highlife') RETURNING id`,
   );
+
+  await assert.rejects(
+    insertMoment(db, { userId, stationId, themeId: theme.rows[0].id, themeName: null }),
+    { code: PG_ERROR.CHECK_VIOLATION },
+  );
+});
+
+test('supprimer un compte efface ses moments, listes et signalements', requiresDatabase, async (t) => {
+  const db = await startTestDatabase(t);
+  const { stationId, userId } = await insertPlaceStationAndMember(db);
+  await insertMoment(db, { userId, stationId });
   const list = await db.query(
     `INSERT INTO lists (user_id, name) VALUES ($1, 'Réveil') RETURNING id`, [userId],
   );
@@ -158,15 +197,10 @@ test('supprimer un compte efface ses moments, listes et signalements', options, 
   assert.deepEqual(rows[0], { moments: '0', lists: '0', list_stations: '0', reports: '0' });
 });
 
-test('un moment survit à la disparition de sa station, grâce à ses copies', options, async (t) => {
+test('un moment survit à la disparition de sa station, grâce à ses copies', requiresDatabase, async (t) => {
   const db = await startTestDatabase(t);
-  const { stationId, userId } = await insertBasics(db);
-  await db.query(
-    `INSERT INTO moments (user_id, station_id, station_name, place_name,
-       country_code, country_name, local_time, track_title)
-     VALUES ($1, $2, 'Cool FM', 'Lagos', 'NG', 'Nigeria', '2026-11-24 21:30', 'Fela Kuti - Zombie')`,
-    [userId, stationId],
-  );
+  const { stationId, userId } = await insertPlaceStationAndMember(db);
+  await insertMoment(db, { userId, stationId, trackTitle: 'Fela Kuti - Zombie' });
 
   await db.query('DELETE FROM stations WHERE id = $1', [stationId]);
 

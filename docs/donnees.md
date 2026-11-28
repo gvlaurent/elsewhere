@@ -201,7 +201,9 @@ Types PostgreSQL utilisés : `integer` (entier), `text` (texte sans longueur imp
 | last_title | text | non | rempli avec last_title_read_at, ou vide avec lui | Dernier titre lu **et classé lisible** ; jamais un faux titre |
 | last_title_read_at | timestamptz | non | idem | Heure de cette lecture, pour la règle des 5 minutes |
 | created_at | timestamptz | oui | par défaut : maintenant | Date d'entrée dans le cache |
-| updated_at | timestamptz | oui | par défaut : maintenant | Date de la dernière mise à jour par la synchro |
+| updated_at | timestamptz | oui | par défaut : maintenant ; remise à l'heure courante par un déclencheur à chaque modification | Date de la dernière modification (synchro, modération) |
+
+Le **déclencheur** (*trigger*) `stations_set_updated_at` est une fonction que PostgreSQL lance tout seul avant chaque modification d'une station : la date de mise à jour reste juste même si le code qui modifie la station oublie de la changer.
 
 ### themes : la liste fermée des thèmes (F2)
 
@@ -232,8 +234,8 @@ La liste des thèmes sera remplie par une migration, avec la story F2 : c'est un
 | place_name | text | oui | | Copie du nom du lieu |
 | country_code | char(2) | oui | | Copie du code pays, pour ranger le passeport (F6) |
 | country_name | text | oui | | Copie du nom du pays |
-| theme_name | text | non | vide si l'auditeur est entré par un lieu | Copie du nom du thème |
-| track_title | text | non | vide = « titre indisponible » | Titre en cours, seulement s'il était lisible et lu il y a moins de 5 minutes |
+| theme_name | text | non | vide si l'auditeur est entré par un lieu ; obligatoire si theme_id est rempli | Copie du nom du thème |
+| track_title | text | non | vide = « titre indisponible » | Titre gardé : copie du titre en cours, seulement s'il était lisible et lu il y a moins de 5 minutes |
 | kept_at | timestamptz | oui | par défaut : maintenant | Instant exact, pour trier du plus récent au plus ancien |
 | local_time | timestamp | oui | | Heure affichée sur place à cet instant (21 h 30 à Lagos) |
 
@@ -245,7 +247,7 @@ La liste des thèmes sera remplie par une migration, avec la story F2 : c'est un
 | --- | --- | --- | --- | --- |
 | id | integer | oui | clé primaire | Identifiant de la liste |
 | user_id | integer | oui | → users, effacée avec le compte | Propriétaire, seul à pouvoir la voir et la modifier (C7) |
-| name | text | oui | 1 à 60 caractères ; unique pour un même membre, sans tenir compte de la casse | Nom (« Réveil ») |
+| name | text | oui | 1 à 60 caractères ; unique pour un même membre, sans tenir compte de la casse ni des espaces autour | Nom (« Réveil ») |
 | created_at | timestamptz | oui | par défaut : maintenant | Date de création |
 
 ### list_stations : contenu des listes (F8, C5)

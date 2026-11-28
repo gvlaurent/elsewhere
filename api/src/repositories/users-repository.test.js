@@ -4,12 +4,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createUser, findUserByEmail } from './users-repository.js';
-import {
-  startTestDatabase,
-  skipWithoutDatabase,
-} from '../db/start-database-for-tests.js';
-
-const options = { skip: skipWithoutDatabase };
+import { startTestDatabase, requiresDatabase } from '../db/start-database-for-tests.js';
 
 const julien = {
   email: 'julien@example.com',
@@ -17,7 +12,7 @@ const julien = {
   consentAt: new Date('2026-11-24T10:00:00Z'),
 };
 
-test('createUser enregistre un membre et ne renvoie jamais le hash', options, async (t) => {
+test('createUser enregistre un membre et ne renvoie jamais le hash', requiresDatabase, async (t) => {
   const db = await startTestDatabase(t);
 
   const user = await createUser(db, julien);
@@ -29,7 +24,7 @@ test('createUser enregistre un membre et ne renvoie jamais le hash', options, as
   assert.equal('passwordHash' in user, false);
 });
 
-test('findUserByEmail retrouve le membre, majuscules ignorées', options, async (t) => {
+test('findUserByEmail retrouve le membre, majuscules ignorées', requiresDatabase, async (t) => {
   const db = await startTestDatabase(t);
   const created = await createUser(db, julien);
 
@@ -39,14 +34,14 @@ test('findUserByEmail retrouve le membre, majuscules ignorées', options, async 
   assert.equal(found.passwordHash, julien.passwordHash);
 });
 
-test('findUserByEmail renvoie null pour un e-mail inconnu', options, async (t) => {
+test('findUserByEmail renvoie null pour un e-mail inconnu', requiresDatabase, async (t) => {
   const db = await startTestDatabase(t);
   await createUser(db, julien);
 
   assert.equal(await findUserByEmail(db, 'aminata@example.com'), null);
 });
 
-test('une valeur piégée est traitée comme une simple valeur (injection SQL)', options, async (t) => {
+test('une valeur piégée est traitée comme une simple valeur (injection SQL)', requiresDatabase, async (t) => {
   const db = await startTestDatabase(t);
   await createUser(db, julien);
 
@@ -60,7 +55,7 @@ test('une valeur piégée est traitée comme une simple valeur (injection SQL)',
   assert.equal(rows[0].total, '1');
 });
 
-test('createUser enregistre tel quel un texte qui ressemble à du SQL', options, async (t) => {
+test('createUser enregistre tel quel un texte qui ressemble à du SQL', requiresDatabase, async (t) => {
   const db = await startTestDatabase(t);
   const tricky = "robert'); DROP TABLE users; --@example.com";
 

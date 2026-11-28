@@ -8,7 +8,7 @@ La structure de la base doit être versionnée : chaque changement est écrit, r
 
 ## Décision
 
-Les migrations sont des fichiers SQL numérotés dans `api/src/db/migrations/` (`001_initial_schema.sql`, puis `002_…`). Un script d'une soixantaine de lignes, `api/src/db/migrate.js`, les applique dans l'ordre, chacune dans une transaction, et note celles qui sont passées dans la table `schema_migrations`. On le lance avec `npm run db:migrate`.
+Les migrations sont des fichiers SQL numérotés dans `api/src/db/migrations/` (`001_initial_schema.sql`, puis `002_…`). Un court script (moins de 80 lignes, commentaires compris), `api/src/db/migrate.js`, les applique dans l'ordre, chacune dans une transaction, et note celles qui sont passées dans la table `schema_migrations`. On le lance avec `npm run db:migrate`.
 
 Un fichier déjà appliqué ne se modifie jamais : on ajoute une nouvelle migration.
 
