@@ -1,6 +1,6 @@
 # Architecture d'Elsewhere
 
-État au 24 novembre 2026 (ELS-13). Ce document décrit Elsewhere en quatre vues, du métier à l'infrastructure, puis détaille les couches de l'API et le déroulé de deux requêtes. Il complète la section 7 du PRD (`docs/prd.md`) et **il est mis à jour dans chaque pull request qui change l'architecture** (voir la dernière section).
+État au 28 novembre 2026 (ELS-14). Ce document décrit Elsewhere en quatre vues, du métier à l'infrastructure, puis détaille les couches de l'API et le déroulé de deux requêtes. Il complète la section 7 du PRD (`docs/prd.md`) et **il est mis à jour dans chaque pull request qui change l'architecture** (voir la dernière section).
 
 ## Pourquoi ce document
 
@@ -114,7 +114,7 @@ flowchart LR
 flowchart LR
     T1["Poste de dev : Ubuntu, Node 24,<br/>Cursor, Claude Code"]:::code
     T2["GitHub : main protégé,<br/>une PR par ticket"]:::code
-    T3["Intégration continue :<br/>lint + tests à chaque push (ELS-14)"]:::decide
+    T3["Intégration continue (GitHub Actions) :<br/>lint + tests à chaque push (ELS-14)"]:::code
     T4["Hébergement API + interface :<br/>déploiement automatique (ELS-15),<br/>hébergeur à choisir"]:::trancher
     T5["Supabase : PostgreSQL seul,<br/>son API auto fermée par la RLS"]:::code
     T6["Secrets en variables d'environnement,<br/>jamais dans le dépôt"]:::code
@@ -131,6 +131,8 @@ flowchart LR
 ```
 
 Le détail des outils et de leurs versions est dans `docs/els-11-environnement.md`.
+
+**L'intégration continue** (`.github/workflows/ci.yml`) rejoue à chaque push, sur une machine neuve de GitHub Actions, ce qu'on lance en local : ESLint et les tests pour l'API, ESLint et la construction pour l'interface. Les tests de base visent Supabase dans un schéma jetable, avec l'adresse de la base rangée dans le secret GitHub `DATABASE_URL` ; sans ce secret, ils sont sautés. Une PR ne peut être fusionnée que si ces deux contrôles sont verts (règle de protection de `main`).
 
 ## Les couches de l'API
 

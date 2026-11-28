@@ -61,6 +61,12 @@ npm run dev
 npm run lint
 ```
 
+## Intégration continue (ELS-14)
+
+À chaque push, GitHub Actions (`.github/workflows/ci.yml`) relance ces vérifications sur une machine neuve, avec Node 24 : `npm ci`, `npm run lint` et `npm test` dans `api/`, puis `npm ci`, `npm run lint` et `npm run build` dans `web/`. `npm ci` installe exactement les versions de `package-lock.json`, comme sur le poste de dev. Le résultat s'affiche sur la PR (coche verte ou croix rouge) et dans l'onglet Actions du dépôt.
+
+Le seul secret de la CI est `DATABASE_URL` (Settings → Secrets and variables → Actions), la même adresse que dans `api/.env`. Le certificat de Supabase, public, est lu dans `api/certs/`.
+
 ## Point de vigilance : alertes de sécurité d'ESLint
 
 `npm audit` signale 4 failles de gravité moyenne dans `minimatch`, une bibliothèque utilisée par ESLint 10. Décision : **ne rien changer pour l'instant**.
