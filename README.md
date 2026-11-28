@@ -37,9 +37,9 @@ flowchart LR
     W["Interface<br/>React + Vite"]:::decide
     subgraph API["API Express, in layers"]
         direction TB
-        R["Routes + input validation"]:::code --> C["Controllers"]:::code --> S["Services<br/>(business rules)"]:::decide --> D["Data access<br/>(parameterized SQL)"]:::code
+        R["Routes + input validation<br/>+ session check (401)"]:::code --> C["Controllers"]:::code --> S["Services<br/>(business rules;<br/>accounts built)"]:::decide --> D["Data access<br/>(parameterized SQL)"]:::code
     end
-    DB[("PostgreSQL on Supabase<br/>9 tables")]:::code
+    DB[("PostgreSQL on Supabase<br/>9 tables + sessions")]:::code
     RS["Station streams<br/>(audio + ICY metadata)"]:::externe
     RB["Radio Browser<br/>directory"]:::externe
 
@@ -54,7 +54,7 @@ flowchart LR
     classDef externe fill:#ffffff,stroke:#333333,stroke-dasharray:4 3,color:#000
 ```
 
-Green blocks are built (the layers are in place with the first route, `GET /api/health`, and the 9-table database schema with its first data access module), blue ones are decided but not built yet. The data model (conceptual and logical models, data dictionary) is in [`docs/donnees.md`](docs/donnees.md) (in French). Four views (business, functional, application, infrastructure), the status of each block (built, decided, still open) and the request walkthroughs are in [`docs/architecture.md`](docs/architecture.md) (in French). It is updated in every pull request that changes the architecture.
+Green blocks are built (the layers are in place with `GET /api/health`, the 9-table database schema, and accounts: sign-up, log-in and log-out, with Argon2id password hashes and server-side sessions in an HttpOnly cookie), blue ones are decided but not built yet. The data model (conceptual and logical models, data dictionary) is in [`docs/donnees.md`](docs/donnees.md) (in French). Four views (business, functional, application, infrastructure), the status of each block (built, decided, still open) and the request walkthroughs are in [`docs/architecture.md`](docs/architecture.md) (in French). It is updated in every pull request that changes the architecture.
 
 ## How the work is run
 
@@ -73,7 +73,7 @@ Green blocks are built (the layers are in place with the first route, `GET /api/
 | `docs/` | Tests, decisions, mockups and the [work environment](docs/els-11-environnement.md) |
 | `scripts/` | Rerunnable test scripts |
 
-The application is being built ticket by ticket: for now, the API answers a health check and the interface shows a home page.
+The application is being built ticket by ticket: for now, the API answers a health check and handles accounts, and the interface shows a home page.
 
 ## Try it
 

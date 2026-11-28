@@ -12,6 +12,7 @@ Le vocabulaire du projet. Les termes sont en français ; la colonne « Dans le c
 | Thème | `theme` | Genre musical d'une liste fermée (cumbia, highlife, rock turc). Une station peut en avoir plusieurs. |
 | Membre | `user` (rôle `member`) | Auditeur qui a créé un compte. On écoute sans compte ; le compte n'est demandé que pour garder quelque chose. |
 | Admin | `user` (rôle `admin`) | Membre qui entretient le catalogue : il masque ou réactive les stations signalées. |
+| Session | `session` | Connexion ouverte d'un membre sur un appareil, valable 30 jours. Le navigateur garde un jeton secret dans un cookie, la base n'en garde que l'empreinte. Se déconnecter la supprime. |
 | Moment | `moment` | Souvenir gardé par un membre pendant une écoute : station, lieu, heure locale, titre s'il était lisible, thème d'entrée. Il garde une copie de ces informations. |
 | Passeport | — | Les moments d'un membre rangés par pays, du plus récent au plus ancien (F6). |
 | Liste | `list` | Sélection personnelle et privée de stations faite par un membre (« Réveil »). |

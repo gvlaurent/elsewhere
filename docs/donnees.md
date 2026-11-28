@@ -1,8 +1,8 @@
 # Données d'Elsewhere : MCD, MLD et dictionnaire
 
-État au 24 novembre 2026 (ELS-13). Ce document décrit la base PostgreSQL d'Elsewhere, du modèle conceptuel au script SQL. Il suit l'arbitrage du 11 novembre (ELS-63, `docs/prd.md` section 7) : **9 tables**, dont deux liaisons plusieurs à plusieurs.
+État au 28 novembre 2026 (ELS-17). Ce document décrit la base PostgreSQL d'Elsewhere, du modèle conceptuel au script SQL. Il suit l'arbitrage du 11 novembre (ELS-63, `docs/prd.md` section 7) : **9 tables** pour le métier, dont deux liaisons plusieurs à plusieurs, plus une table technique, `sessions` (ELS-17).
 
-Le script qui crée la base est [`api/src/db/migrations/001_initial_schema.sql`](../api/src/db/migrations/001_initial_schema.sql). En cas d'écart, c'est lui qui fait foi, et ce document est corrigé.
+Les scripts qui créent la base sont [`001_initial_schema.sql`](../api/src/db/migrations/001_initial_schema.sql) (les 9 tables) et [`002_sessions.sql`](../api/src/db/migrations/002_sessions.sql) (les sessions), dans `api/src/db/migrations/`. En cas d'écart, ce sont eux qui font foi, et ce document est corrigé.
 
 ## Pourquoi ce document
 
@@ -22,6 +22,7 @@ flowchart LR
     STATION["<b>STATION</b><br/>identifiant Radio Browser<br/>nom, URL du flux<br/>statut<br/>dernier titre lu, heure de lecture"]
     THEME["<b>THÈME</b><br/>nom, slug"]
     MEMBRE["<b>MEMBRE</b><br/>e-mail<br/>hash du mot de passe<br/>rôle<br/>date du consentement"]
+    SESSION["<b>SESSION</b><br/>empreinte du jeton<br/>date d'expiration"]
     MOMENT["<b>MOMENT</b><br/>copies : station, lieu, pays, thème<br/>titre (si lisible)<br/>instant, heure locale"]
     LISTE["<b>LISTE</b><br/>nom"]
 
@@ -33,6 +34,7 @@ flowchart LR
     POSSEDER(["posséder"])
     CONTENIR(["contenir<br/><i>date d'ajout</i>"])
     SIGNALER(["signaler<br/><i>motif, date</i>"])
+    OUVRIR(["ouvrir"])
     MODERER(["modérer<br/><i>date</i>"])
 
     STATION -- "1,1" --- SITUER -- "0,n" --- LIEU
@@ -44,6 +46,7 @@ flowchart LR
     LISTE -- "0,n" --- CONTENIR -- "0,n" --- STATION
     MEMBRE -- "0,n" --- SIGNALER -- "0,n" --- STATION
     STATION -- "0,1" --- MODERER -- "0,n" --- MEMBRE
+    MEMBRE -- "0,n" --- OUVRIR -- "1,1" --- SESSION
 ```
 
 **Règles de gestion** qui justifient ces cardinalités :
@@ -54,11 +57,12 @@ flowchart LR
 - Une liste appartient à **un seul** membre (`1,1`) ; une liste contient plusieurs stations et une station peut être dans plusieurs listes.
 - Un membre signale une station **au plus une fois** (C8) : le couple (membre, station) est unique.
 - Une station garde la trace du **dernier** admin qui l'a masquée ou réactivée (`0,1`), avec la date (C9).
+- Une session appartient à **un seul** membre (`1,1`) ; un membre a une session par appareil connecté, ou aucune (`0,n`).
 
 **Ce que le MCD ne contient pas, et pourquoi :**
 
 - **Pas d'historique des titres** (ancienne entité `track_plays`) : aucune fonctionnalité n'en a besoin. Le tableau du direct n'utilise que le dernier titre de moins de 5 minutes, porté par la station ; le titre à retrouver est copié dans le moment (ELS-63).
-- **Pas encore de session ni de jeton de réinitialisation** du mot de passe : ils seront décidés avec l'authentification (ELS-17), dans une migration `002`.
+- **Pas encore de jeton de réinitialisation** du mot de passe : il viendra avec la réinitialisation par e-mail (ELS-39), dans une nouvelle migration.
 
 ## 2. Modèle logique (MLD)
 
@@ -75,6 +79,7 @@ Notation : la clé primaire est **soulignée**, une clé étrangère est précé
 - **lists** (<u>id</u>, #user_id, name, created_at)
 - **list_stations** (<u>#list_id, #station_id</u>, added_at)
 - **reports** (<u>id</u>, #user_id, #station_id, reason, created_at)
+- **sessions** (<u>id</u>, #user_id, token_hash, created_at, expires_at)
 
 `reports` a sa propre clé `id`, alors que c'est une association : un signalement sera désigné seul par l'admin (« traiter le signalement 42 »). L'unicité du couple (membre, station) est gardée par une contrainte `UNIQUE`.
 
@@ -92,6 +97,7 @@ erDiagram
     users ||--o{ reports : "user_id"
     stations ||--o{ reports : "station_id"
     users |o--o{ stations : "status_changed_by"
+    users ||--o{ sessions : "user_id"
 
     places {
         integer id PK
@@ -106,6 +112,12 @@ erDiagram
         text password_hash
         text role
         timestamptz consent_at
+    }
+    sessions {
+        integer id PK
+        integer user_id FK
+        text token_hash UK
+        timestamptz expires_at
     }
     stations {
         integer id PK
@@ -268,20 +280,32 @@ La liste des thèmes sera remplie par une migration, avec la story F2 : c'est un
 | reason | text | oui | `no_sound`, `not_music`, `bad_quality` ou `other` | Motif choisi dans une liste courte |
 | created_at | timestamptz | oui | par défaut : maintenant | Date du signalement |
 
+### sessions : les sessions de connexion (F4, C1)
+
+Table technique, ajoutée par la migration 002 (ELS-17). Les choix sont expliqués dans l'[ADR-0004](adr/0004-sessions-en-base-et-cookie.md).
+
+| Colonne | Type | Obligatoire | Règle | Description |
+| --- | --- | --- | --- | --- |
+| id | integer | oui | clé primaire | Identifiant de la session |
+| user_id | integer | oui | → users, effacée avec le compte | Membre connecté |
+| token_hash | text | oui | unique ; 64 caractères hexadécimaux | Empreinte SHA-256 du jeton du cookie ; le jeton lui-même n'est jamais stocké |
+| created_at | timestamptz | oui | par défaut : maintenant | Date de connexion |
+| expires_at | timestamptz | oui | | Fin de validité (30 jours après la connexion) ; une session expirée est refusée |
+
 ## 4. Choix du modèle physique
 
 **Que se passe-t-il quand on supprime une ligne ?** Chaque clé étrangère dit ce que devient la ligne qui pointe vers elle :
 
 | Suppression de… | Effet | Raison |
 | --- | --- | --- |
-| un compte | ses moments, listes, contenus de listes et signalements sont effacés (`CASCADE`) | F7 : supprimer le compte efface toutes ses données |
+| un compte | ses moments, listes, contenus de listes, signalements et sessions sont effacés (`CASCADE`) | F7 : supprimer le compte efface toutes ses données |
 | un compte admin | les stations qu'il a modérées gardent la date, l'auteur devient inconnu (`SET NULL`) | la trace de l'action reste |
 | une station | ses thèmes, ses places dans les listes et ses signalements sont effacés (`CASCADE`) ; les moments gardent leurs copies (`SET NULL`) | un souvenir ne disparaît pas avec le cache |
 | un lieu | refusée tant qu'il porte des stations (`RESTRICT`) | une station sans lieu n'aurait plus de sens |
 
 **Les règles vivent aussi dans la base.** Rôles, statuts et motifs sont des listes fermées (`CHECK`), l'unicité des e-mails et des noms de liste est garantie par des index uniques. L'API valide déjà les entrées (ELS-16), mais la base reste le dernier rempart : même une erreur de code ne peut pas y écrire une donnée incohérente.
 
-**Index.** PostgreSQL crée seul un index pour chaque clé primaire et chaque `UNIQUE`. Les autres servent les écrans les plus fréquents : stations d'un lieu (F1), stations d'un thème (F2), passeport d'un membre trié par date (F6), signalements d'une station (C9).
+**Index.** PostgreSQL crée seul un index pour chaque clé primaire et chaque `UNIQUE`. Les autres servent les écrans les plus fréquents : stations d'un lieu (F1), stations d'un thème (F2), passeport d'un membre trié par date (F6), signalements d'une station (C9), sessions d'un membre (ménage des sessions expirées à chaque connexion).
 
 **L'API automatique de Supabase est fermée.** Supabase publie toute table du schéma `public` sur une API web, lisible avec la clé publique du projet. La migration active la **sécurité par ligne** (RLS) sur chaque table sans écrire aucune règle : cette API ne voit plus rien. L'API Express se connecte avec le compte propriétaire des tables, que la RLS ne bloque pas. Les règles d'accès restent donc toutes dans Express, comme le veut le PRD.
 
