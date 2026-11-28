@@ -45,7 +45,10 @@ export const STARTING_PLACES = Object.freeze([
     countryCode: 'CO',
     countryName: 'Colombie',
     timezone: 'America/Bogota',
-    stateAliases: ['Bogota'],
+    // « Distrito Capital » : nom officiel de la ville-district de Bogotá
+    // dans l'annuaire. « Bogota D.C. » est déjà couvert par « Bogota ».
+    // Pas « Cundinamarca » : ce département compte bien d'autres villes.
+    stateAliases: ['Bogota', 'Distrito Capital'],
   },
   {
     name: 'Istanbul',

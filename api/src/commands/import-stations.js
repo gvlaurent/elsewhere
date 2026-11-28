@@ -13,13 +13,7 @@ import { createPool } from '../db/pool.js';
 import { createRadioBrowserClient } from '../clients/radio-browser-client.js';
 import { importStations } from '../services/stations-import-service.js';
 import { STARTING_PLACES } from '../config/starting-places.js';
-
-// Libellés des raisons d'écart, dans l'ordre d'affichage.
-const REASON_LABELS = [
-  ['offline', 'hors ligne'],
-  ['not_https', 'pas en HTTPS'],
-  ['duplicate', 'doublon'],
-];
+import { DISCARD_REASONS } from '../services/station-selection.js';
 
 // Met en forme le rapport du service pour le terminal.
 // Reçoit le rapport { places, countries } de importStations.
@@ -34,7 +28,7 @@ export function formatImportReport({ places, countries }) {
     const discarded = Object.values(place.discarded).reduce((sum, n) => sum + n, 0);
     totalKept += place.kept;
     totalDiscarded += discarded;
-    const reasons = REASON_LABELS.map(([key, label]) => `${label} : ${place.discarded[key]}`).join(', ');
+    const reasons = Object.entries(DISCARD_REASONS).map(([key, label]) => `${label} : ${place.discarded[key]}`).join(', ');
     lines.push(
       `- ${place.name} (${place.countryCode}) : ${place.kept} gardées ` +
         `(${place.inserted} nouvelles, ${place.updated} mises à jour, ${place.unchanged} inchangées), ` +

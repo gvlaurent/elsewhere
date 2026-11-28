@@ -39,3 +39,39 @@ test('withTransaction annule tout si le travail échoue en cours de route', requ
   const { rows } = await db.query('SELECT count(*) AS total FROM places');
   assert.equal(rows[0].total, '0');
 });
+
+// Faux pool dont la connexion échoue au choix sur certaines requêtes. Il
+// note ce que reçoit release, pour vérifier que la connexion est détruite.
+function fakePool({ failOn }) {
+  const released = [];
+  const client = {
+    query: async (sql) => {
+      if (failOn.includes(sql)) throw new Error(`${sql} impossible : connexion coupée`);
+    },
+    release: (error) => released.push(error),
+  };
+  return { pool: { connect: async () => client }, released };
+}
+
+test('ROLLBACK en échec : l\'erreur d\'origine remonte et la connexion est détruite', async () => {
+  const { pool, released } = fakePool({ failOn: ['ROLLBACK'] });
+
+  await assert.rejects(
+    withTransaction(pool, async () => {
+      throw new Error('erreur d\'origine');
+    }),
+    /erreur d'origine/,
+  );
+
+  // release(error) : pg détruit la connexion au lieu de la remettre au pool.
+  assert.equal(released.length, 1);
+  assert.match(released[0].message, /erreur d'origine/);
+});
+
+test('travail réussi : la connexion est rendue au pool sans erreur', async () => {
+  const { pool, released } = fakePool({ failOn: [] });
+
+  await withTransaction(pool, async () => 'ok');
+
+  assert.deepEqual(released, [undefined]);
+});

@@ -8,11 +8,11 @@ const report = {
   places: [
     {
       name: 'Lagos', countryCode: 'NG', kept: 12, inserted: 10, updated: 1, unchanged: 1,
-      discarded: { offline: 3, not_https: 20, duplicate: 2 },
+      discarded: { offline: 3, notHttps: 20, duplicate: 2 },
     },
     {
       name: 'Accra', countryCode: 'GH', kept: 0, inserted: 0, updated: 0, unchanged: 0,
-      discarded: { offline: 0, not_https: 0, duplicate: 0 },
+      discarded: { offline: 0, notHttps: 0, duplicate: 0 },
     },
   ],
   countries: [

@@ -16,12 +16,15 @@ import { upsertStations } from '../repositories/stations-repository.js';
 import { withTransaction } from '../db/transaction.js';
 
 // Importe les stations des lieux donnés.
-// Reçoit le pool de la base et { client, places } : un client Radio Browser
-// (voir clients/radio-browser-client.js, ou un faux client dans les tests)
-// et la liste des lieux (voir config/starting-places.js).
+// Reçoit db, qui doit être le pool et non un client de transaction : le
+// service ouvre lui-même sa transaction (withTransaction emprunte une
+// connexion au pool). Reçoit aussi { client, places } : un client Radio
+// Browser (voir clients/radio-browser-client.js, ou un faux client dans les
+// tests) et la liste des lieux (voir config/starting-places.js).
 // Renvoie un rapport { places, countries } :
 // - places : pour chaque lieu, { name, countryCode, kept, inserted, updated,
-//   unchanged, discarded: { offline, not_https, duplicate } } ;
+//   unchanged, discarded }, où discarded a une clé par raison de
+//   DISCARD_REASONS (station-selection.js) ;
 // - countries : pour chaque pays, { countryCode, received, unknownPlace, invalid }.
 // Lève RadioBrowserUnavailableError si l'annuaire ne répond pas : dans ce
 // cas rien n'est écrit, et le cache garde ses stations d'avant.

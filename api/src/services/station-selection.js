@@ -19,6 +19,16 @@
 // d'écart (sauf « invalide » et « lieu inconnu ») est comptée pour un lieu
 // précis, ce qui rend le rapport lisible lieu par lieu.
 
+// Les raisons d'écart comptées lieu par lieu, avec leur libellé pour le
+// rapport. C'est la seule liste : le tri, le rapport du service et
+// l'affichage de la commande la lisent tous ici. « lieu inconnu » et
+// « invalide » n'y sont pas : ils se comptent par pays (voir plus bas).
+export const DISCARD_REASONS = Object.freeze({
+  offline: 'hors ligne',
+  notHttps: 'pas en HTTPS',
+  duplicate: 'doublon',
+});
+
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // Met un texte sous une forme comparable : sans accents, en minuscules,
@@ -49,7 +59,21 @@ export function matchesPlace(station, place) {
   const state = normalizeText(station.state);
   const searched = state || normalizeText(station.name);
   if (!searched) return false;
-  return place.stateAliases.some((alias) => searched.includes(normalizeText(alias)));
+  return normalizedAliases(place).some((alias) => searched.includes(alias));
+}
+
+// Alias déjà normalisés, gardés par lieu : ils sont calculés une seule fois
+// par lieu, et non pour chaque station comparée (des centaines par pays).
+// WeakMap : la mémoire est libérée d'elle-même quand le lieu n'est plus utilisé.
+const aliasCache = new WeakMap();
+
+// Renvoie les alias normalisés d'un lieu, en les calculant au premier appel.
+// Reçoit le lieu ({ stateAliases }). Renvoie une liste de textes normalisés.
+function normalizedAliases(place) {
+  if (!aliasCache.has(place)) {
+    aliasCache.set(place, place.stateAliases.map(normalizeText));
+  }
+  return aliasCache.get(place);
 }
 
 // Lit une adresse web et la renvoie seulement si elle est en http ou https.
@@ -79,13 +103,14 @@ function streamKey(url) {
 //   places : pour chaque lieu, dans le même ordre, { place, kept, discarded },
 //     où kept est la liste des stations à enregistrer, au format de la base
 //     ({ externalId, name, streamUrl, homepageUrl }), et discarded le nombre
-//     de stations écartées par raison ({ offline, not_https, duplicate }) ;
+//     de stations écartées par raison (une clé par raison de DISCARD_REASONS) ;
 //   countries : pour chaque pays, { countryCode, received, unknownPlace, invalid } }.
 export function selectStations(stationsByCountry, places) {
   const placeResults = places.map((place) => ({
     place,
     kept: [],
-    discarded: { offline: 0, not_https: 0, duplicate: 0 },
+    // Un compteur à zéro pour chaque raison de DISCARD_REASONS.
+    discarded: Object.fromEntries(Object.keys(DISCARD_REASONS).map((reason) => [reason, 0])),
     candidates: [],
   }));
   const countries = [];
@@ -129,7 +154,7 @@ export function selectStations(stationsByCountry, places) {
       }
       const stream = parseWebUrl(station.url_resolved || station.url);
       if (stream?.protocol !== 'https:') {
-        result.discarded.not_https += 1;
+        result.discarded.notHttps += 1;
         continue;
       }
       const id = station.stationuuid.toLowerCase();

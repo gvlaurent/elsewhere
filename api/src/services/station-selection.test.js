@@ -2,7 +2,7 @@
 // sur des données simulées de Radio Browser, sans base ni réseau.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { selectStations, matchesPlace, normalizeText } from './station-selection.js';
+import { selectStations, matchesPlace, normalizeText, DISCARD_REASONS } from './station-selection.js';
 
 const lagos = {
   name: 'Lagos', countryCode: 'NG', countryName: 'Nigeria', timezone: 'Africa/Lagos',
@@ -55,7 +55,7 @@ test('ne garde que les flux en https://', () => {
   const { places } = selectStations({ NG: [secure, plain, broken] }, [lagos]);
 
   assert.deepEqual(places[0].kept.map((s) => s.externalId), [secure.stationuuid]);
-  assert.equal(places[0].discarded.not_https, 2);
+  assert.equal(places[0].discarded.notHttps, 2);
 });
 
 test('url_resolved vide : on se rabat sur url, toujours en HTTPS seulement', () => {
@@ -166,4 +166,12 @@ test('le nom ne sert jamais hors du pays du lieu', () => {
   const station = rbStation({ countrycode: 'FR', state: '', name: 'Dakar Paris' });
 
   assert.equal(matchesPlace(station, dakar), false);
+});
+
+test('les raisons d\'écart d\'un lieu sont exactement celles de DISCARD_REASONS, à zéro au départ', () => {
+  const { places } = selectStations({ NG: [] }, [lagos]);
+
+  assert.deepEqual(Object.keys(places[0].discarded), Object.keys(DISCARD_REASONS));
+  assert.deepEqual(Object.keys(DISCARD_REASONS), ['offline', 'notHttps', 'duplicate']);
+  assert.ok(Object.values(places[0].discarded).every((count) => count === 0));
 });

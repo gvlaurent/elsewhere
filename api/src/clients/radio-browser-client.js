@@ -9,8 +9,9 @@
 // stations-import-service.js. Choix expliqués dans l'ADR-0005.
 //
 // Règles d'usage de Radio Browser respectées ici (docs/els-6-annuaire-stations.md) :
-// - aucun serveur codé en dur : la liste vient du DNS, elle est mélangée,
-//   et on passe au serveur suivant en cas d'échec ;
+// - la liste des serveurs vient du DNS, elle est mélangée, et on passe au
+//   serveur suivant en cas d'échec ; si le DNS n'en donne aucun, on se
+//   replie sur all.api.radio-browser.info, le nom officiel qui les répartit ;
 // - un User-Agent qui nomme l'application, sans aucune donnée personnelle ;
 // - les stations sont identifiées par stationuuid et cherchées par code pays.
 import { resolveSrv } from 'node:dns/promises';
@@ -19,6 +20,10 @@ import { z } from '../config/zod.js';
 // Nom envoyé à Radio Browser à chaque requête. Générique : ni nom de
 // personne, ni adresse e-mail.
 export const USER_AGENT = 'Elsewhere/0.1';
+
+// Nom officiel de Radio Browser qui répartit les demandes entre ses
+// serveurs. Utilisé seulement si la recherche DNS n'en trouve aucun.
+const FALLBACK_SERVER = 'all.api.radio-browser.info';
 
 // Délai maximal d'une requête, en millisecondes. Au-delà, on abandonne ce
 // serveur et on passe au suivant.
@@ -93,14 +98,15 @@ export function createRadioBrowserClient({
   // répond correctement. Reçoit le chemin (ex. /json/stations/…). Renvoie
   // le JSON reçu. Lève RadioBrowserUnavailableError si tous échouent.
   async function getJson(path) {
-    let servers;
+    let servers = [];
     try {
       servers = shuffle(await resolveServers());
-    } catch (error) {
-      throw new RadioBrowserUnavailableError('Serveurs de Radio Browser introuvables (DNS)', {
-        cause: error,
-      });
+    } catch {
+      // DNS en échec : on passe au repli juste en dessous, sans s'arrêter.
     }
+    // Repli : sans serveur trouvé, on vise le nom officiel qui répartit
+    // lui-même les demandes entre les serveurs de Radio Browser.
+    if (servers.length === 0) servers = [FALLBACK_SERVER];
 
     const failures = [];
     for (const server of servers) {

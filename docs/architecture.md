@@ -381,6 +381,7 @@ sequenceDiagram
 ```
 
 - **Seuls les flux `https://` entrent dans le cache** : une page en HTTPS ne peut pas lire un flux en `http://`.
+- **L'annuaire est joint sans serveur codé en dur** : la liste vient du DNS ; si elle est vide ou si le DNS échoue, le client se replie sur `all.api.radio-browser.info`, le nom officiel qui répartit les demandes.
 - **Une station est rattachée à un lieu par alias, « la région d'abord, sinon le nom »** : si son champ libre `state` est rempli, il doit contenir l'un des alias du lieu ; s'il est vide, c'est le nom de la station qui doit en contenir un. Toujours dans le pays du lieu, sans tenir compte des majuscules ni des accents. Sinon elle est écartée comme « lieu inconnu », comptée par pays. Un `state` rempli qui ne correspond pas n'est jamais rattrapé par le nom.
 - **Pas de doublon** : à l'intérieur d'une importation (même identifiant, même flux, même nom dans un lieu), et d'une importation à l'autre (`ON CONFLICT (external_id)`).
 - **Une station masquée par un admin le reste** : l'importation ne touche jamais au statut.

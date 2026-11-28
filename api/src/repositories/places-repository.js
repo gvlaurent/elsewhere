@@ -11,7 +11,8 @@ const COLUMNS = `
   id, name, country_code AS "countryCode", country_name AS "countryName", timezone`;
 
 // Crée un lieu, ou met à jour celui qui a déjà ce nom dans ce pays.
-// Reçoit le pool et { name, countryCode, countryName, timezone }.
+// Reçoit db (le pool ou un client de transaction) et
+// { name, countryCode, countryName, timezone }.
 // Renvoie le lieu enregistré, avec son identifiant.
 export async function upsertPlace(db, { name, countryCode, countryName, timezone }) {
   const { rows } = await db.query(

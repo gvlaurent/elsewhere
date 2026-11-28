@@ -9,8 +9,9 @@
 
 // Enregistre les stations d'un lieu : ajoute les nouvelles, met à jour
 // celles qui ont changé, ne touche pas aux autres.
-// Reçoit le pool, l'identifiant du lieu et une liste de stations
-// { externalId, name, streamUrl, homepageUrl }, sans doublon d'externalId.
+// Reçoit db (le pool ou un client de transaction), l'identifiant du lieu et
+// une liste de stations { externalId, name, streamUrl, homepageUrl }, sans
+// doublon d'externalId.
 // Renvoie { inserted, updated } : le nombre de lignes créées et modifiées.
 export async function upsertStations(db, placeId, stations) {
   if (stations.length === 0) return { inserted: 0, updated: 0 };

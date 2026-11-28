@@ -61,11 +61,11 @@ test('importe les stations, les rattache Ã  leur lieu et rend compte de chaque Ã
   assert.deepEqual(report.places, [
     {
       name: 'Lagos', countryCode: 'NG', kept: 2, inserted: 2, updated: 0, unchanged: 0,
-      discarded: { offline: 1, not_https: 1, duplicate: 1 },
+      discarded: { offline: 1, notHttps: 1, duplicate: 1 },
     },
     {
       name: 'Accra', countryCode: 'GH', kept: 1, inserted: 1, updated: 0, unchanged: 0,
-      discarded: { offline: 0, not_https: 0, duplicate: 0 },
+      discarded: { offline: 0, notHttps: 0, duplicate: 0 },
     },
   ]);
   assert.deepEqual(report.countries, [

@@ -127,7 +127,17 @@ test('une réponse qui n\'est pas une liste est refusée', async () => {
   await assert.rejects(client.searchStationsByCountry('NG'), RadioBrowserUnavailableError);
 });
 
-test('aucun serveur trouvé dans le DNS : RadioBrowserUnavailableError', async () => {
+test('le DNS ne renvoie aucun serveur : repli sur all.api.radio-browser.info', async () => {
+  const { fetchImpl, calls } = fakeFetch(() => jsonResponse([lagosStation]));
+  const client = createRadioBrowserClient({ fetchImpl, resolveServers: async () => [] });
+
+  const stations = await client.searchStationsByCountry('NG');
+
+  assert.equal(new URL(calls[0].url).host, 'all.api.radio-browser.info');
+  assert.equal(stations.length, 1);
+});
+
+test('la recherche DNS échoue : même repli sur all.api.radio-browser.info', async () => {
   const { fetchImpl, calls } = fakeFetch(() => jsonResponse([]));
   const client = createRadioBrowserClient({
     fetchImpl,
@@ -136,6 +146,14 @@ test('aucun serveur trouvé dans le DNS : RadioBrowserUnavailableError', async (
     },
   });
 
+  await client.searchStationsByCountry('NG');
+
+  assert.deepEqual(calls.map((call) => new URL(call.url).host), ['all.api.radio-browser.info']);
+});
+
+test('repli en panne lui aussi : RadioBrowserUnavailableError', async () => {
+  const { fetchImpl } = fakeFetch(() => jsonResponse({ error: 'panne' }, 503));
+  const client = createRadioBrowserClient({ fetchImpl, resolveServers: async () => [] });
+
   await assert.rejects(client.searchStationsByCountry('NG'), RadioBrowserUnavailableError);
-  assert.equal(calls.length, 0);
 });
