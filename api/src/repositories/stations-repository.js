@@ -59,3 +59,21 @@ export async function upsertStations(db, placeId, stations) {
   const inserted = rows.filter((row) => row.inserted).length;
   return { inserted, updated: rows.length - inserted };
 }
+
+// Stations actives d'un lieu, triées par nom (tableau du direct, F1).
+// Reçoit db et l'identifiant du lieu. Renvoie [{ id, name, streamUrl,
+// homepageUrl, lastTitle, lastTitleReadAt }] : le titre brut et l'heure de
+// sa lecture, que le service filtre avec freshTitle (fresh-title.js). La
+// règle des 5 minutes n'est pas écrite ici, en SQL : elle n'existe qu'à un
+// seul endroit. Une station masquée par un admin n'est jamais renvoyée.
+export async function findActiveStationsByPlace(db, placeId) {
+  const { rows } = await db.query(
+    `SELECT id, name, stream_url AS "streamUrl", homepage_url AS "homepageUrl",
+            last_title AS "lastTitle", last_title_read_at AS "lastTitleReadAt"
+     FROM stations
+     WHERE place_id = $1 AND status = 'active'
+     ORDER BY name, id`,
+    [placeId],
+  );
+  return rows;
+}

@@ -30,3 +30,29 @@ export async function upsertPlace(db, { name, countryCode, countryName, timezone
   );
   return rows[0];
 }
+
+// Liste les lieux qui ont au moins une station active, avec le nombre de
+// ces stations, triés par nom (écran des lieux, F1). Reçoit db. Renvoie
+// [{ id, name, countryCode, countryName, timezone, stationCount }].
+export async function findPlacesWithActiveStations(db) {
+  const { rows } = await db.query(
+    // JOIN (et non LEFT JOIN) + filtre sur le statut : un lieu sans station
+    // active n'a aucune ligne à joindre, il disparaît de lui-même.
+    // count(*) renvoie un bigint, que pg transmet en texte : ::int le
+    // ramène à un nombre JavaScript (il n'y a jamais 2 milliards de stations).
+    `SELECT p.id, p.name, p.country_code AS "countryCode", p.country_name AS "countryName",
+            p.timezone, count(*)::int AS "stationCount"
+     FROM places p
+     JOIN stations s ON s.place_id = p.id AND s.status = 'active'
+     GROUP BY p.id
+     ORDER BY p.name, p.id`,
+  );
+  return rows;
+}
+
+// Cherche un lieu par son identifiant. Reçoit db et l'identifiant (entier).
+// Renvoie { id, name, countryCode, countryName, timezone }, ou null.
+export async function findPlaceById(db, id) {
+  const { rows } = await db.query(`SELECT ${COLUMNS} FROM places WHERE id = $1`, [id]);
+  return rows[0] ?? null;
+}

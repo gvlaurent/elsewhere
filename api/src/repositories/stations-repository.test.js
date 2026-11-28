@@ -3,7 +3,7 @@
 // à jour sans doublon, statut d'admin respecté, requêtes paramétrées.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { upsertStations } from './stations-repository.js';
+import { findActiveStationsByPlace, upsertStations } from './stations-repository.js';
 import { upsertPlace } from './places-repository.js';
 import { startTestDatabase, requiresDatabase } from '../db/start-database-for-tests.js';
 
@@ -99,4 +99,37 @@ test('un nom qui ressemble à du SQL est enregistré tel quel (injection SQL)', 
 
   const { rows } = await db.query('SELECT name FROM stations');
   assert.deepEqual(rows, [{ name: tricky }]);
+});
+
+// --- Stations actives d'un lieu, pour le tableau du direct (ELS-23) ---
+
+test('findActiveStationsByPlace renvoie les stations actives du lieu, triées par nom, avec leur dernier titre', requiresDatabase, async (t) => {
+  const { db, placeId } = await setup(t);
+  const accra = await upsertPlace(db, {
+    name: 'Accra', countryCode: 'GH', countryName: 'Ghana', timezone: 'Africa/Accra',
+  });
+  const hidden = { ...coolFm, externalId: '11111111-1111-4111-8111-111111111111', name: 'Masquée FM', streamUrl: 'https://stream.example/hidden' };
+  const elsewhere = { ...coolFm, externalId: '22222222-2222-4222-8222-222222222222', name: 'Joy FM', streamUrl: 'https://stream.example/joy' };
+  await upsertStations(db, placeId, [rhythm, coolFm, hidden]);
+  await upsertStations(db, accra.id, [elsewhere]);
+  await db.query("UPDATE stations SET status = 'hidden' WHERE name = 'Masquée FM'");
+  const readAt = new Date('2026-11-28T21:56:00Z');
+  await db.query(
+    'UPDATE stations SET last_title = $1, last_title_read_at = $2 WHERE external_id = $3',
+    ['Burna Boy – Ye', readAt, coolFm.externalId],
+  );
+
+  const stations = await findActiveStationsByPlace(db, placeId);
+
+  assert.deepEqual(stations.map((s) => s.name), ['Cool FM', 'Rhythm 93.7']);
+  assert.deepEqual(stations[0], {
+    id: stations[0].id,
+    name: 'Cool FM',
+    streamUrl: coolFm.streamUrl,
+    homepageUrl: coolFm.homepageUrl,
+    lastTitle: 'Burna Boy – Ye',
+    lastTitleReadAt: readAt,
+  });
+  assert.equal(stations[1].lastTitle, null);
+  assert.equal(stations[1].lastTitleReadAt, null);
 });
