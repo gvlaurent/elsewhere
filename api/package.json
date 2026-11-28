@@ -10,7 +10,8 @@
     "dev": "node --env-file-if-exists=.env --watch src/server.js",
     "test": "node --env-file-if-exists=.env --test",
     "lint": "eslint .",
-    "db:migrate": "node --env-file-if-exists=.env src/db/migrate.js"
+    "db:migrate": "node --env-file-if-exists=.env src/db/migrate.js",
+    "stations:import": "node --env-file-if-exists=.env src/commands/import-stations.js"
   },
   "engines": {
     "node": ">=24"
