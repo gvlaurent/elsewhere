@@ -215,6 +215,8 @@ Types PostgreSQL utilisés : `integer` (entier), `text` (texte sans longueur imp
 | created_at | timestamptz | oui | par défaut : maintenant | Date d'entrée dans le cache |
 | updated_at | timestamptz | oui | par défaut : maintenant ; remise à l'heure courante par un déclencheur à chaque modification | Date de la dernière modification (synchro, modération) |
 
+Les lieux et les stations sont remplis par la commande `npm run stations:import` (ELS-22, [ADR-0005](adr/0005-importation-des-stations-depuis-radio-browser.md)) : elle crée ou met à jour les lieux de départ (`ON CONFLICT (country_code, name)`), puis leurs stations (`ON CONFLICT (external_id)`), sans jamais toucher au statut choisi par un admin. `stream_url` ne contient que des adresses en `https://`.
+
 Le **déclencheur** (*trigger*) `stations_set_updated_at` est une fonction que PostgreSQL lance tout seul avant chaque modification d'une station : la date de mise à jour reste juste même si le code qui modifie la station oublie de la changer.
 
 ### themes : la liste fermée des thèmes (F2)
